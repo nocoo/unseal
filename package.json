@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "bun run src/index.ts",
     "build": "bun build src/index.ts --target=node --outdir=dist",
-    "test": "bun test",
+    "test": "bun test tests/scanner.test.ts tests/sudo.test.ts tests/unseal.test.ts tests/prompt.test.ts && bun test tests/index.test.ts",
     "test:coverage": "bun test --coverage",
     "typecheck": "tsc --noEmit",
     "prepare": "husky"

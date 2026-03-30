@@ -75,7 +75,26 @@ export async function run(options: RunOptions = {}): Promise<number> {
 
   // 3. Early exit if nothing to unseal
   if (quarantined.length === 0) {
-    console.log(chalk.green("\n  ✓ All apps are already unsealed\n"));
+    if (unknown.length > 0 && unsealed.length === 0) {
+      // All apps failed to scan — this is NOT "all unsealed"
+      console.log(
+        chalk.red("\n  ✗ Could not determine quarantine status for any app.")
+      );
+      console.log(
+        chalk.dim("    Check file permissions or run with elevated access.\n")
+      );
+      return 1;
+    }
+    if (unknown.length > 0) {
+      // Some succeeded (all unsealed), some failed
+      console.log(
+        chalk.yellow(
+          `\n  ✓ All readable apps are already unsealed (${unknown.length} could not be checked)\n`
+        )
+      );
+    } else {
+      console.log(chalk.green("\n  ✓ All apps are already unsealed\n"));
+    }
     return 0;
   }
 
@@ -127,10 +146,8 @@ export async function run(options: RunOptions = {}): Promise<number> {
 }
 
 // Only execute when run directly (not imported for testing)
-const isMainModule =
-  typeof Bun !== "undefined"
-    ? Bun.main === import.meta.path
-    : import.meta.url === `file://${process.argv[1]}`;
+import { fileURLToPath } from "node:url";
+const isMainModule = fileURLToPath(import.meta.url) === process.argv[1];
 
 if (isMainModule) {
   run().then((code) => {

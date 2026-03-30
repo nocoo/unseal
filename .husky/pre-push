@@ -1,5 +1,5 @@
 # L2: Integration Tests
-bun test
+bun run test
 
 # G2: Security
 gitleaks protect --staged

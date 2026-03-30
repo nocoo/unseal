@@ -1,6 +1,28 @@
-import { describe, it, expect, mock, beforeEach, spyOn, afterEach } from "bun:test";
+import { describe, it, expect, mock, beforeEach, afterEach, spyOn } from "bun:test";
 import type { AppInfo, UnsealResult } from "../src/types.js";
 import type { Executor } from "../src/exec.js";
+
+// --- Mock all dependencies before importing the real run() ---
+const mockListApps = mock<(...args: any[]) => Promise<AppInfo[]>>();
+const mockCheckSudo = mock<(...args: any[]) => Promise<boolean>>();
+const mockUnsealApps = mock<(...args: any[]) => Promise<UnsealResult[]>>();
+const mockSelectApps = mock<(...args: any[]) => Promise<AppInfo[]>>();
+const mockConfirmUnseal = mock<(...args: any[]) => Promise<boolean>>();
+const mockCreateExecutor = mock<() => Executor>();
+
+mock.module("../src/scanner.js", () => ({ listApps: mockListApps }));
+mock.module("../src/sudo.js", () => ({ checkSudo: mockCheckSudo }));
+mock.module("../src/unseal.js", () => ({ unsealApps: mockUnsealApps }));
+mock.module("../src/prompt.js", () => ({
+  selectApps: mockSelectApps,
+  confirmUnseal: mockConfirmUnseal,
+}));
+mock.module("../src/exec.js", () => ({
+  createExecutor: mockCreateExecutor,
+}));
+
+// Import the REAL run() after mocking its dependencies
+const { run } = await import("../src/index.js");
 
 function makeApp(
   name: string,
@@ -15,250 +37,212 @@ function makeApp(
   };
 }
 
-// We test the run() logic by building it inline with injected deps
-// to avoid mock.module leaking across test files.
+describe("CLI entry point (real run())", () => {
+  let logSpy: ReturnType<typeof spyOn>;
+  let errorSpy: ReturnType<typeof spyOn>;
 
-interface Deps {
-  listApps: (...args: any[]) => Promise<AppInfo[]>;
-  selectApps: (...args: any[]) => Promise<AppInfo[]>;
-  confirmUnseal: (...args: any[]) => Promise<boolean>;
-  checkSudo: (...args: any[]) => Promise<boolean>;
-  unsealApps: (...args: any[]) => Promise<UnsealResult[]>;
-}
-
-/**
- * Minimal re-implementation of run() logic for unit testing.
- * This mirrors src/index.ts flow exactly but with injected dependencies.
- */
-async function runWithDeps(
-  deps: Deps,
-  options: { isTTY?: boolean; args?: string[] } = {}
-): Promise<{ code: number; logs: string[]; errors: string[] }> {
-  const logs: string[] = [];
-  const errors: string[] = [];
-  const isTTY = options.isTTY ?? true;
-  const args = options.args ?? [];
-
-  // Handle --help
-  if (args.includes("--help") || args.includes("-h")) {
-    logs.push("unseal — help text");
-    return { code: 0, logs, errors };
-  }
-
-  // Handle --version
-  if (args.includes("--version") || args.includes("-V")) {
-    logs.push("0.1.0");
-    return { code: 0, logs, errors };
-  }
-
-  // Non-interactive detection
-  if (!isTTY) {
-    logs.push("Interactive terminal required. Run unseal in a terminal.");
-    return { code: 0, logs, errors };
-  }
-
-  const dummyExec: Executor = async () => ({ stdout: "", stderr: "", exitCode: 0 });
-
-  // 1. Scan
-  const apps = await deps.listApps(dummyExec);
-  const quarantined = apps.filter((a) => a.status === "quarantined");
-  const unsealed = apps.filter((a) => a.status === "unsealed");
-  const unknown = apps.filter((a) => a.status === "unknown");
-
-  // 2. Warn about unknown
-  if (unknown.length > 0) {
-    logs.push(`${unknown.length} app(s) could not be read`);
-  }
-
-  // 3. Early exit
-  if (quarantined.length === 0) {
-    logs.push("All apps are already unsealed");
-    return { code: 0, logs, errors };
-  }
-
-  // 4. Select
-  const selected = await deps.selectApps(quarantined, unsealed, unknown);
-  if (selected.length === 0) {
-    return { code: 0, logs, errors };
-  }
-
-  // 5. Confirm
-  const confirmed = await deps.confirmUnseal(selected);
-  if (!confirmed) {
-    return { code: 0, logs, errors };
-  }
-
-  // 6. Sudo
-  const hasSudo = await deps.checkSudo(dummyExec);
-  if (!hasSudo) {
-    errors.push("Failed to obtain sudo privileges");
-    return { code: 1, logs, errors };
-  }
-
-  // 7. Unseal
-  const results = await deps.unsealApps(selected, dummyExec);
-
-  // 8. Results
-  for (const r of results) {
-    if (r.success) {
-      logs.push(`✓ ${r.app.name}`);
-    } else {
-      logs.push(`✗ ${r.app.name} — ${r.error}`);
-    }
-  }
-
-  return { code: 0, logs, errors };
-}
-
-describe("CLI entry point", () => {
-  it("prints 'already unsealed' and exits when no quarantined apps", async () => {
-    const deps: Deps = {
-      listApps: async () => [makeApp("A", "unsealed"), makeApp("B", "unsealed")],
-      selectApps: async () => [],
-      confirmUnseal: async () => false,
-      checkSudo: async () => false,
-      unsealApps: async () => [],
-    };
-
-    const { code, logs } = await runWithDeps(deps);
-
-    expect(code).toBe(0);
-    expect(logs.join("\n")).toContain("already unsealed");
+  beforeEach(() => {
+    mockListApps.mockReset();
+    mockCheckSudo.mockReset();
+    mockUnsealApps.mockReset();
+    mockSelectApps.mockReset();
+    mockConfirmUnseal.mockReset();
+    mockCreateExecutor.mockReturnValue(async () => ({
+      stdout: "",
+      stderr: "",
+      exitCode: 0,
+    }));
+    logSpy = spyOn(console, "log").mockImplementation(() => {});
+    errorSpy = spyOn(console, "error").mockImplementation(() => {});
   });
 
-  it("exits when user selects nothing", async () => {
-    const checkSudo = mock(async () => true);
-    const unsealApps = mock(async () => [] as UnsealResult[]);
-    const deps: Deps = {
-      listApps: async () => [makeApp("A", "quarantined")],
-      selectApps: async () => [],
-      confirmUnseal: async () => false,
-      checkSudo,
-      unsealApps,
-    };
+  afterEach(() => {
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
 
-    const { code } = await runWithDeps(deps);
+  // --- Flag handling ---
+
+  it("prints help text and exits 0 on --help", async () => {
+    const code = await run({ args: ["--help"], isTTY: true });
+    expect(code).toBe(0);
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("unseal");
+    expect(output).toContain("Usage");
+  });
+
+  it("prints version and exits 0 on --version", async () => {
+    const code = await run({ args: ["--version"], isTTY: true });
+    expect(code).toBe(0);
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("0.1.0");
+  });
+
+  it("exits gracefully when not a TTY", async () => {
+    const code = await run({ isTTY: false });
+    expect(code).toBe(0);
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("Interactive terminal required");
+  });
+
+  // --- Scan results ---
+
+  it("prints 'already unsealed' when all apps are unsealed", async () => {
+    mockListApps.mockResolvedValueOnce([
+      makeApp("A", "unsealed"),
+      makeApp("B", "unsealed"),
+    ]);
+
+    const code = await run({ isTTY: true });
 
     expect(code).toBe(0);
-    expect(checkSudo).not.toHaveBeenCalled();
-    expect(unsealApps).not.toHaveBeenCalled();
+    expect(mockSelectApps).not.toHaveBeenCalled();
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("already unsealed");
+  });
+
+  it("exits 1 when ALL apps are unknown (not falsely 'all unsealed')", async () => {
+    mockListApps.mockResolvedValueOnce([
+      makeApp("A", "unknown", "permission denied"),
+      makeApp("B", "unknown", "timeout"),
+    ]);
+
+    const code = await run({ isTTY: true });
+
+    expect(code).toBe(1);
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).not.toContain("already unsealed");
+    expect(output).toContain("could not");
+  });
+
+  it("warns when some apps are unknown but rest are unsealed", async () => {
+    mockListApps.mockResolvedValueOnce([
+      makeApp("A", "unsealed"),
+      makeApp("B", "unknown", "permission denied"),
+    ]);
+
+    const code = await run({ isTTY: true });
+
+    expect(code).toBe(0);
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("could not be checked");
+  });
+
+  // --- Selection flow ---
+
+  it("exits when user selects nothing", async () => {
+    mockListApps.mockResolvedValueOnce([makeApp("A", "quarantined")]);
+    mockSelectApps.mockResolvedValueOnce([]);
+
+    const code = await run({ isTTY: true });
+
+    expect(code).toBe(0);
+    expect(mockCheckSudo).not.toHaveBeenCalled();
+    expect(mockUnsealApps).not.toHaveBeenCalled();
   });
 
   it("exits when user declines confirmation", async () => {
-    const checkSudo = mock(async () => true);
-    const unsealApps = mock(async () => [] as UnsealResult[]);
     const app = makeApp("A", "quarantined");
-    const deps: Deps = {
-      listApps: async () => [app],
-      selectApps: async () => [app],
-      confirmUnseal: async () => false,
-      checkSudo,
-      unsealApps,
-    };
+    mockListApps.mockResolvedValueOnce([app]);
+    mockSelectApps.mockResolvedValueOnce([app]);
+    mockConfirmUnseal.mockResolvedValueOnce(false);
 
-    const { code } = await runWithDeps(deps);
+    const code = await run({ isTTY: true });
 
     expect(code).toBe(0);
-    expect(checkSudo).not.toHaveBeenCalled();
-    expect(unsealApps).not.toHaveBeenCalled();
+    expect(mockCheckSudo).not.toHaveBeenCalled();
+    expect(mockUnsealApps).not.toHaveBeenCalled();
   });
+
+  // --- Sudo ---
 
   it("prints error and exits 1 when sudo check fails", async () => {
-    const unsealApps = mock(async () => [] as UnsealResult[]);
     const app = makeApp("A", "quarantined");
-    const deps: Deps = {
-      listApps: async () => [app],
-      selectApps: async () => [app],
-      confirmUnseal: async () => true,
-      checkSudo: async () => false,
-      unsealApps,
-    };
+    mockListApps.mockResolvedValueOnce([app]);
+    mockSelectApps.mockResolvedValueOnce([app]);
+    mockConfirmUnseal.mockResolvedValueOnce(true);
+    mockCheckSudo.mockResolvedValueOnce(false);
 
-    const { code, errors } = await runWithDeps(deps);
+    const code = await run({ isTTY: true });
 
     expect(code).toBe(1);
-    expect(unsealApps).not.toHaveBeenCalled();
-    expect(errors.join("\n")).toContain("sudo");
+    expect(mockUnsealApps).not.toHaveBeenCalled();
+    const output = errorSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("sudo");
   });
+
+  // --- Happy path ---
 
   it("calls unsealApps with selected apps on happy path", async () => {
     const app1 = makeApp("A", "quarantined");
     const app2 = makeApp("B", "quarantined");
-    const unsealApps = mock(async (apps: AppInfo[]) =>
-      apps.map((app) => ({ app, success: true }))
-    );
+    mockListApps.mockResolvedValueOnce([
+      app1,
+      app2,
+      makeApp("C", "unsealed"),
+    ]);
+    mockSelectApps.mockResolvedValueOnce([app1, app2]);
+    mockConfirmUnseal.mockResolvedValueOnce(true);
+    mockCheckSudo.mockResolvedValueOnce(true);
+    mockUnsealApps.mockResolvedValueOnce([
+      { app: app1, success: true },
+      { app: app2, success: true },
+    ]);
 
-    const deps: Deps = {
-      listApps: async () => [app1, app2, makeApp("C", "unsealed")],
-      selectApps: async () => [app1, app2],
-      confirmUnseal: async () => true,
-      checkSudo: async () => true,
-      unsealApps,
-    };
-
-    const { code } = await runWithDeps(deps);
+    const code = await run({ isTTY: true });
 
     expect(code).toBe(0);
-    expect(unsealApps).toHaveBeenCalledTimes(1);
-    expect(unsealApps.mock.calls[0][0]).toEqual([app1, app2]);
+    expect(mockUnsealApps).toHaveBeenCalledTimes(1);
+    expect(mockUnsealApps.mock.calls[0][0]).toEqual([app1, app2]);
   });
 
-  it("prints warning when unknown status apps are present", async () => {
+  it("prints warning when unknown status apps exist alongside quarantined", async () => {
     const qApp = makeApp("A", "quarantined");
     const uApp = makeApp("B", "unknown", "permission denied");
-    const deps: Deps = {
-      listApps: async () => [qApp, uApp],
-      selectApps: async () => [qApp],
-      confirmUnseal: async () => true,
-      checkSudo: async () => true,
-      unsealApps: async (apps) => apps.map((app) => ({ app, success: true })),
-    };
+    mockListApps.mockResolvedValueOnce([qApp, uApp]);
+    mockSelectApps.mockResolvedValueOnce([qApp]);
+    mockConfirmUnseal.mockResolvedValueOnce(true);
+    mockCheckSudo.mockResolvedValueOnce(true);
+    mockUnsealApps.mockResolvedValueOnce([
+      { app: qApp, success: true },
+    ]);
 
-    const { code, logs } = await runWithDeps(deps);
+    const code = await run({ isTTY: true });
 
     expect(code).toBe(0);
-    expect(logs.join("\n")).toContain("could not");
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("could not be read");
   });
 
-  it("handles --help flag", async () => {
-    const deps: Deps = {
-      listApps: async () => [],
-      selectApps: async () => [],
-      confirmUnseal: async () => false,
-      checkSudo: async () => false,
-      unsealApps: async () => [],
-    };
+  it("prints failure details and summary when some unseals fail", async () => {
+    const app1 = makeApp("A", "quarantined");
+    const app2 = makeApp("B", "quarantined");
+    mockListApps.mockResolvedValueOnce([app1, app2]);
+    mockSelectApps.mockResolvedValueOnce([app1, app2]);
+    mockConfirmUnseal.mockResolvedValueOnce(true);
+    mockCheckSudo.mockResolvedValueOnce(true);
+    mockUnsealApps.mockResolvedValueOnce([
+      { app: app1, success: true },
+      { app: app2, success: false, error: "Operation not permitted" },
+    ]);
 
-    const { code, logs } = await runWithDeps(deps, { args: ["--help"] });
+    const code = await run({ isTTY: true });
+
     expect(code).toBe(0);
-    expect(logs.join("\n")).toContain("help");
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("A.app");
+    expect(output).toContain("B.app");
+    expect(output).toContain("1 succeeded");
+    expect(output).toContain("1 failed");
   });
 
-  it("handles --version flag", async () => {
-    const deps: Deps = {
-      listApps: async () => [],
-      selectApps: async () => [],
-      confirmUnseal: async () => false,
-      checkSudo: async () => false,
-      unsealApps: async () => [],
-    };
+  it("handles empty apps list from scanner", async () => {
+    mockListApps.mockResolvedValueOnce([]);
 
-    const { code, logs } = await runWithDeps(deps, { args: ["--version"] });
+    const code = await run({ isTTY: true });
+
     expect(code).toBe(0);
-    expect(logs[0]).toBe("0.1.0");
-  });
-
-  it("exits gracefully when not a TTY", async () => {
-    const deps: Deps = {
-      listApps: async () => [],
-      selectApps: async () => [],
-      confirmUnseal: async () => false,
-      checkSudo: async () => false,
-      unsealApps: async () => [],
-    };
-
-    const { code, logs } = await runWithDeps(deps, { isTTY: false });
-    expect(code).toBe(0);
-    expect(logs.join("\n")).toContain("Interactive terminal required");
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("already unsealed");
   });
 });
