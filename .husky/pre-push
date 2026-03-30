@@ -2,5 +2,5 @@
 bun test
 
 # G2: Security
-# gitleaks protect --staged
-# osv-scanner --lockfile=bun.lock
+gitleaks protect --staged
+osv-scanner --lockfile=bun.lock
