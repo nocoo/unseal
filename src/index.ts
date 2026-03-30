@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import chalk from "chalk";
+import { createRequire } from "node:module";
 import { createExecutor } from "./exec.js";
 import { listApps } from "./scanner.js";
 import { selectApps, confirmUnseal } from "./prompt.js";
@@ -7,7 +8,8 @@ import { checkSudo } from "./sudo.js";
 import { unsealApps } from "./unseal.js";
 import type { AppInfo } from "./types.js";
 
-const VERSION = "0.1.0";
+const require = createRequire(import.meta.url);
+const { version: VERSION } = require("../package.json") as { version: string };
 
 const HELP_TEXT = `
   ${chalk.bold("unseal")} — Scan /Applications for quarantined apps and batch-remove quarantine
@@ -98,16 +100,26 @@ export async function run(options: RunOptions = {}): Promise<number> {
     return 0;
   }
 
-  // 4. Multi-select prompt
-  const selected = await selectApps(quarantined, unsealed, unknown);
-  if (selected.length === 0) {
-    return 0;
-  }
+  // 4. Multi-select prompt + 5. Confirm
+  let selected: AppInfo[];
+  let confirmed: boolean;
+  try {
+    selected = await selectApps(quarantined, unsealed, unknown);
+    if (selected.length === 0) {
+      return 0;
+    }
 
-  // 5. Confirm
-  const confirmed = await confirmUnseal(selected);
-  if (!confirmed) {
-    return 0;
+    confirmed = await confirmUnseal(selected);
+    if (!confirmed) {
+      return 0;
+    }
+  } catch (err: unknown) {
+    // @inquirer/prompts throws ExitPromptError on Ctrl+C
+    if (err && typeof err === "object" && "name" in err && err.name === "ExitPromptError") {
+      console.log();
+      return 0;
+    }
+    throw err;
   }
 
   // 6. Sudo check (only after user fully commits)
@@ -152,5 +164,8 @@ const isMainModule = fileURLToPath(import.meta.url) === process.argv[1];
 if (isMainModule) {
   run().then((code) => {
     process.exitCode = code;
+  }).catch((err) => {
+    console.error(err);
+    process.exitCode = 1;
   });
 }

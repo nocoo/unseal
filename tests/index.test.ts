@@ -1,6 +1,10 @@
 import { describe, it, expect, mock, beforeEach, afterEach, spyOn } from "bun:test";
+import { createRequire } from "node:module";
 import type { AppInfo, UnsealResult } from "../src/types.js";
 import type { Executor } from "../src/exec.js";
+
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json") as { version: string };
 
 // --- Mock all dependencies before importing the real run() ---
 const mockListApps = mock<(...args: any[]) => Promise<AppInfo[]>>();
@@ -75,7 +79,7 @@ describe("CLI entry point (real run())", () => {
     const code = await run({ args: ["--version"], isTTY: true });
     expect(code).toBe(0);
     const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
-    expect(output).toContain("0.1.0");
+    expect(output).toContain(pkg.version);
   });
 
   it("exits gracefully when not a TTY", async () => {
@@ -152,6 +156,40 @@ describe("CLI entry point (real run())", () => {
     expect(code).toBe(0);
     expect(mockCheckSudo).not.toHaveBeenCalled();
     expect(mockUnsealApps).not.toHaveBeenCalled();
+  });
+
+  it("exits gracefully on Ctrl+C (ExitPromptError) during select", async () => {
+    const exitErr = new Error("User force closed the prompt");
+    exitErr.name = "ExitPromptError";
+    mockListApps.mockResolvedValueOnce([makeApp("A", "quarantined")]);
+    mockSelectApps.mockRejectedValueOnce(exitErr);
+
+    const code = await run({ isTTY: true });
+
+    expect(code).toBe(0);
+    expect(mockUnsealApps).not.toHaveBeenCalled();
+  });
+
+  it("exits gracefully on Ctrl+C (ExitPromptError) during confirm", async () => {
+    const app = makeApp("A", "quarantined");
+    const exitErr = new Error("User force closed the prompt");
+    exitErr.name = "ExitPromptError";
+    mockListApps.mockResolvedValueOnce([app]);
+    mockSelectApps.mockResolvedValueOnce([app]);
+    mockConfirmUnseal.mockRejectedValueOnce(exitErr);
+
+    const code = await run({ isTTY: true });
+
+    expect(code).toBe(0);
+    expect(mockCheckSudo).not.toHaveBeenCalled();
+    expect(mockUnsealApps).not.toHaveBeenCalled();
+  });
+
+  it("re-throws non-ExitPromptError from prompts", async () => {
+    mockListApps.mockResolvedValueOnce([makeApp("A", "quarantined")]);
+    mockSelectApps.mockRejectedValueOnce(new TypeError("something broke"));
+
+    expect(run({ isTTY: true })).rejects.toThrow("something broke");
   });
 
   // --- Sudo ---
