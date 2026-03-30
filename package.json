@@ -1,0 +1,31 @@
+{
+  "name": "unseal",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Scan macOS /Applications for quarantined apps and batch-remove the quarantine attribute",
+  "bin": {
+    "unseal": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build src/index.ts --target=node --outdir=dist",
+    "test": "bun test",
+    "test:coverage": "bun test --coverage",
+    "typecheck": "tsc --noEmit"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.0.0",
+    "chalk": "^5.4.0"
+  }
+}
