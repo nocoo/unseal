@@ -178,5 +178,29 @@ describe("scanner", () => {
       expect(result[0].path).toBe("/custom/path/App.app");
       expect(result[0].status).toBe("quarantined");
     });
+
+    it("handles executor throwing an exception as unknown", async () => {
+      const exec: Executor = async () => {
+        throw new Error("spawn failed");
+      };
+
+      const result = await listApps(exec, "/apps", ["Crash.app"]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe("unknown");
+      expect(result[0].error).toBe("spawn failed");
+    });
+
+    it("handles non-Error thrown values", async () => {
+      const exec: Executor = async () => {
+        throw "string error";
+      };
+
+      const result = await listApps(exec, "/apps", ["Crash.app"]);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe("unknown");
+      expect(result[0].error).toBe("string error");
+    });
   });
 });
