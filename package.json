@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Scan macOS /Applications for quarantined apps and batch-remove the quarantine attribute",
   "bin": {
-    "unseal": "./dist/index.js"
+    "unseal": "dist/index.js"
   },
   "files": [
     "dist"
