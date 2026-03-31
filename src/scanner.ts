@@ -13,61 +13,65 @@ const DEFAULT_DIR = "/Applications";
  * @param dir - Directory to scan (default: /Applications)
  * @param entries - Optional pre-resolved directory entries (for testing).
  *                  If not provided, reads from the filesystem.
+ * @param onProgress - Optional callback invoked before scanning each app.
  */
 export async function listApps(
   exec: Executor,
   dir: string = DEFAULT_DIR,
-  entries?: string[]
+  entries?: string[],
+  onProgress?: (appName: string) => void,
 ): Promise<AppInfo[]> {
   const dirEntries = entries ?? (await readdir(dir));
 
   const appNames = dirEntries.filter((name) => name.endsWith(".app"));
 
-  const apps = await Promise.all(
-    appNames.map(async (name): Promise<AppInfo> => {
-      const appPath = join(dir, name);
-      try {
-        const result = await exec("xattr", ["-l", appPath]);
+  const apps: AppInfo[] = [];
+  for (const name of appNames) {
+    onProgress?.(name);
+    const appPath = join(dir, name);
+    try {
+      const result = await exec("xattr", ["-l", appPath]);
 
-        if (result.exitCode !== 0) {
-          return {
-            name,
-            path: appPath,
-            status: "unknown",
-            error: result.stderr.trim() || `xattr exited with code ${result.exitCode}`,
-          };
-        }
-
-        const hasQuarantineAttr = result.stdout.includes(QUARANTINE_ATTR);
-
-        if (!hasQuarantineAttr) {
-          return { name, path: appPath, status: "unsealed" };
-        }
-
-        // Quarantine xattr present — ask Gatekeeper if it actually blocks this app.
-        // spctl exit 0 = signature valid, Gatekeeper allows it → treat as unsealed.
-        // spctl exit ≠ 0 = Gatekeeper rejects → truly quarantined.
-        const spctl = await exec("spctl", [
-          "--assess",
-          "--type",
-          "execute",
-          appPath,
-        ]);
-        return {
-          name,
-          path: appPath,
-          status: spctl.exitCode === 0 ? "unsealed" : "quarantined",
-        };
-      } catch (err) {
-        return {
+      if (result.exitCode !== 0) {
+        apps.push({
           name,
           path: appPath,
           status: "unknown",
-          error: err instanceof Error ? err.message : String(err),
-        };
+          error: result.stderr.trim() || `xattr exited with code ${result.exitCode}`,
+        });
+        continue;
       }
-    })
-  );
+
+      const hasQuarantineAttr = result.stdout.includes(QUARANTINE_ATTR);
+
+      if (!hasQuarantineAttr) {
+        apps.push({ name, path: appPath, status: "unsealed" });
+        continue;
+      }
+
+      // Quarantine xattr present — ask Gatekeeper if it actually blocks this app.
+      // spctl exit 0 = signature valid, Gatekeeper allows it → treat as unsealed.
+      // spctl exit ≠ 0 = Gatekeeper rejects → truly quarantined.
+      const spctl = await exec("spctl", [
+        "--assess",
+        "--type",
+        "execute",
+        appPath,
+      ]);
+      apps.push({
+        name,
+        path: appPath,
+        status: spctl.exitCode === 0 ? "unsealed" : "quarantined",
+      });
+    } catch (err) {
+      apps.push({
+        name,
+        path: appPath,
+        status: "unknown",
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
 
   return apps.sort((a, b) => a.name.localeCompare(b.name));
 }

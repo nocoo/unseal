@@ -287,5 +287,31 @@ describe("scanner", () => {
       expect(statuses["UnsignedApp.app"]).toBe("quarantined");
       expect(statuses["Clean.app"]).toBe("unsealed");
     });
+
+    it("calls onProgress in entry order with app names", async () => {
+      const exec = makeExec({
+        "/apps/B.app": { stdout: "", stderr: "", exitCode: 0 },
+        "/apps/A.app": { stdout: "", stderr: "", exitCode: 0 },
+      });
+
+      const progressCalls: string[] = [];
+      await listApps(exec, "/apps", ["B.app", "A.app"], (name) => {
+        progressCalls.push(name);
+      });
+
+      // onProgress called in entry order (before sorting)
+      expect(progressCalls).toEqual(["B.app", "A.app"]);
+    });
+
+    it("works without onProgress callback", async () => {
+      const exec = makeExec({
+        "/apps/X.app": { stdout: "", stderr: "", exitCode: 0 },
+      });
+
+      // Should not throw when onProgress is omitted
+      const result = await listApps(exec, "/apps", ["X.app"]);
+      expect(result).toHaveLength(1);
+      expect(result[0].status).toBe("unsealed");
+    });
   });
 });

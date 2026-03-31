@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import chalk from "chalk";
+import { confirm } from "@inquirer/prompts";
 import { createRequire } from "node:module";
 import { createExecutor } from "./exec.js";
 import { listApps } from "./scanner.js";
@@ -59,14 +60,36 @@ export async function run(options: RunOptions = {}): Promise<number> {
 
   const exec = createExecutor();
 
-  // 1. Scan apps
-  const apps = await listApps(exec);
+  // 1. Confirm scan
+  let proceed: boolean;
+  try {
+    proceed = await confirm({
+      message: "Scan /Applications for quarantined apps?",
+      default: true,
+    });
+  } catch (err: unknown) {
+    if (err && typeof err === "object" && "name" in err && err.name === "ExitPromptError") {
+      console.log(chalk.dim("\n  Cancelled.\n"));
+      return 0;
+    }
+    throw err;
+  }
+  if (!proceed) {
+    console.log(chalk.dim("\n  Cancelled.\n"));
+    return 0;
+  }
+
+  // 2. Scan apps with progress indicator
+  const apps = await listApps(exec, undefined, undefined, (name) => {
+    process.stdout.write(`\r\x1b[K  Scanning…  ${name}`);
+  });
+  process.stdout.write("\r\x1b[K"); // clear scanning line
 
   const quarantined = apps.filter((a) => a.status === "quarantined");
   const unsealed = apps.filter((a) => a.status === "unsealed");
   const unknown = apps.filter((a) => a.status === "unknown");
 
-  // 2. Warn about unknown status apps
+  // 3. Warn about unknown status apps
   if (unknown.length > 0) {
     console.log(
       chalk.yellow(
@@ -75,7 +98,7 @@ export async function run(options: RunOptions = {}): Promise<number> {
     );
   }
 
-  // 3. Early exit if nothing to unseal
+  // 4. Early exit if nothing to unseal
   if (quarantined.length === 0) {
     if (unknown.length > 0 && unsealed.length === 0) {
       // All apps failed to scan — this is NOT "all unsealed"
@@ -100,7 +123,7 @@ export async function run(options: RunOptions = {}): Promise<number> {
     return 0;
   }
 
-  // 4. Multi-select prompt + 5. Confirm
+  // 5. Multi-select prompt + 6. Confirm
   let selected: AppInfo[];
   let confirmed: boolean;
   try {
@@ -122,7 +145,7 @@ export async function run(options: RunOptions = {}): Promise<number> {
     throw err;
   }
 
-  // 6. Sudo check (only after user fully commits)
+  // 7. Sudo check (only after user fully commits)
   const hasSudo = await checkSudo(exec);
   if (!hasSudo) {
     console.error(
@@ -131,10 +154,10 @@ export async function run(options: RunOptions = {}): Promise<number> {
     return 1;
   }
 
-  // 7. Unseal
+  // 8. Unseal
   const results = await unsealApps(selected, exec);
 
-  // 8. Print results
+  // 9. Print results
   console.log();
   for (const r of results) {
     if (r.success) {
