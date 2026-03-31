@@ -1,0 +1,18 @@
+name: CI
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  ci:
+    uses: nocoo/ci/.github/workflows/bun-quality.yml@main
+    with:
+      bun-version: "1.3.11"
+      test-command: "bun run test"
+      lint-command: "bun run lint"
+      typecheck-command: "bun run typecheck"
+      enable-security: "true"
+      upload-coverage: "false"
+    secrets: inherit

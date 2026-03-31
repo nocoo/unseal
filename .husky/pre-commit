@@ -3,3 +3,4 @@ bun run test
 
 # G1: Static Analysis
 bun run typecheck
+bun run lint

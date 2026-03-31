@@ -1,7 +1,6 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect } from "bun:test";
 import { listApps } from "../src/scanner.js";
 import type { Executor, ExecResult } from "../src/exec.js";
-import type { AppInfo } from "../src/types.js";
 
 /**
  * Build a mock executor that dispatches on `cmd:path` composite key first,
@@ -22,8 +21,6 @@ function makeExec(
   };
 }
 
-// Mock readdir to control what files are in the directory
-const mockReaddir = mock<(dir: string) => Promise<string[]>>();
 
 describe("scanner", () => {
   describe("listApps", () => {

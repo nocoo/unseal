@@ -63,8 +63,8 @@ describe("CLI entry point (real run())", () => {
       stderr: "",
       exitCode: 0,
     }));
-    logSpy = spyOn(console, "log").mockImplementation(() => {});
-    errorSpy = spyOn(console, "error").mockImplementation(() => {});
+    logSpy = spyOn(console, "log").mockImplementation(() => undefined);
+    errorSpy = spyOn(console, "error").mockImplementation(() => undefined);
     stdoutSpy = spyOn(process.stdout, "write").mockImplementation(() => true);
   });
 
