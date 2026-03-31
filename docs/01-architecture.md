@@ -61,11 +61,11 @@ export interface UnsealResult {
 
 **Status semantics:**
 
-| Status         | Meaning                                    | TUI behavior                |
-|---------------|--------------------------------------------|-----------------------------|
-| `quarantined` | Has `com.apple.quarantine` attribute       | Yellow, selectable          |
-| `unsealed`    | No quarantine attribute                    | Green ✓, info only          |
-| `unknown`     | xattr command failed (permission/timeout)  | Red ?, info only + warning  |
+| Status         | Meaning                                                        | TUI behavior                |
+|---------------|----------------------------------------------------------------|-----------------------------|
+| `quarantined` | Has quarantine xattr AND Gatekeeper rejects (`spctl` exit ≠ 0) | Yellow, selectable          |
+| `unsealed`    | No quarantine xattr, OR Gatekeeper allows (`spctl` exit 0)     | Green ✓, info only          |
+| `unknown`     | xattr/spctl command failed (permission/timeout)                | Red ?, info only + warning  |
 
 ### 2. `src/scanner.ts` — App Discovery & Quarantine Detection
 
@@ -81,10 +81,17 @@ export interface UnsealResult {
 
 ```
 xattr -l /Applications/SomeApp.app
-  → output contains "com.apple.quarantine" → status: "quarantined"
-  → output does NOT contain it             → status: "unsealed"
-  → command fails (non-zero exit / timeout) → status: "unknown", error: <stderr>
+  → output does NOT contain "com.apple.quarantine" → status: "unsealed"
+  → output contains "com.apple.quarantine"         → run Gatekeeper check ↓
+
+spctl --assess --type execute /Applications/SomeApp.app
+  → exit 0  (signature valid, Gatekeeper allows)   → status: "unsealed"
+  → exit ≠ 0 (Gatekeeper rejects)                  → status: "quarantined"
+
+Either command fails (non-zero exit / timeout / exception) → status: "unknown", error: <stderr>
 ```
+
+The `spctl` call is only made when the quarantine xattr is present, so non-quarantined apps incur zero extra overhead.
 
 ### 3. `src/unseal.ts` — Remove Quarantine Attribute
 

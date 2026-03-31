@@ -38,11 +38,25 @@ export async function listApps(
           };
         }
 
-        const isQuarantined = result.stdout.includes(QUARANTINE_ATTR);
+        const hasQuarantineAttr = result.stdout.includes(QUARANTINE_ATTR);
+
+        if (!hasQuarantineAttr) {
+          return { name, path: appPath, status: "unsealed" };
+        }
+
+        // Quarantine xattr present — ask Gatekeeper if it actually blocks this app.
+        // spctl exit 0 = signature valid, Gatekeeper allows it → treat as unsealed.
+        // spctl exit ≠ 0 = Gatekeeper rejects → truly quarantined.
+        const spctl = await exec("spctl", [
+          "--assess",
+          "--type",
+          "execute",
+          appPath,
+        ]);
         return {
           name,
           path: appPath,
-          status: isQuarantined ? "quarantined" : "unsealed",
+          status: spctl.exitCode === 0 ? "unsealed" : "quarantined",
         };
       } catch (err) {
         return {

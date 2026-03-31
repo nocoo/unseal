@@ -16,6 +16,12 @@ export function createMockExecutor(): Executor {
       return { stdout: "", stderr: "", exitCode: 0 };
     }
 
+    // spctl --assess --type execute <path> — simulate Gatekeeper rejection
+    // Exit code 3 = app is not signed / notarized, so it stays quarantined.
+    if (cmd === "spctl" && args[0] === "--assess") {
+      return { stdout: "", stderr: "rejected\nsource=no signature", exitCode: 3 };
+    }
+
     // sudo -n true — simulate passwordless sudo available
     if (cmd === "sudo" && args.includes("-n")) {
       return { stdout: "", stderr: "", exitCode: 0 };
