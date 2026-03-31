@@ -114,9 +114,9 @@ export async function run(options: RunOptions = {}): Promise<number> {
       return 0;
     }
   } catch (err: unknown) {
-    // @inquirer/prompts throws ExitPromptError on Ctrl+C
+    // @inquirer/prompts throws ExitPromptError on Ctrl+C / Esc
     if (err && typeof err === "object" && "name" in err && err.name === "ExitPromptError") {
-      console.log();
+      console.log(chalk.dim("\n  Cancelled.\n"));
       return 0;
     }
     throw err;

@@ -168,6 +168,8 @@ describe("CLI entry point (real run())", () => {
 
     expect(code).toBe(0);
     expect(mockUnsealApps).not.toHaveBeenCalled();
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("Cancelled.");
   });
 
   it("exits gracefully on Ctrl+C (ExitPromptError) during confirm", async () => {
@@ -183,6 +185,8 @@ describe("CLI entry point (real run())", () => {
     expect(code).toBe(0);
     expect(mockCheckSudo).not.toHaveBeenCalled();
     expect(mockUnsealApps).not.toHaveBeenCalled();
+    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+    expect(output).toContain("Cancelled.");
   });
 
   it("re-throws non-ExitPromptError from prompts", async () => {
