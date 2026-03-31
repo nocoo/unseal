@@ -1,6 +1,6 @@
 {
   "name": "unseal",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Scan macOS /Applications for quarantined apps and batch-remove the quarantine attribute",
   "bin": {

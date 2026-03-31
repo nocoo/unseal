@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.1 — 2026-03-31
+
+### Fixed
+
+- **CLI produces no output when installed via npm** — `isMainModule` detection failed because symlink path didn't match `import.meta.url`; now resolves symlinks with `realpathSync` before comparing
+
 ## 0.1.0 — 2026-03-31
 
 Initial release.

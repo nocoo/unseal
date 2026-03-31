@@ -182,7 +182,11 @@ export async function run(options: RunOptions = {}): Promise<number> {
 
 // Only execute when run directly (not imported for testing)
 import { fileURLToPath } from "node:url";
-const isMainModule = fileURLToPath(import.meta.url) === process.argv[1];
+import { realpathSync } from "node:fs";
+
+const thisFile = fileURLToPath(import.meta.url);
+const mainFile = process.argv[1] ? realpathSync(process.argv[1]) : "";
+const isMainModule = thisFile === mainFile;
 
 if (isMainModule) {
   run().then((code) => {
