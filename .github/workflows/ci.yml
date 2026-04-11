@@ -7,7 +7,7 @@ on:
 
 jobs:
   ci:
-    uses: nocoo/ci/.github/workflows/bun-quality.yml@main
+    uses: nocoo/base-ci/.github/workflows/bun-quality.yml@v2026
     with:
       bun-version: "1.3.11"
       test-command: "bun run test"
