@@ -4,6 +4,7 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   ci:
@@ -15,4 +16,5 @@ jobs:
       typecheck-command: "bun run typecheck"
       enable-security: "true"
       upload-coverage: "false"
+      enable-l2: "false"
     secrets: inherit
