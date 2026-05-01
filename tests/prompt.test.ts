@@ -82,6 +82,19 @@ describe("prompt", () => {
       expect(result).toEqual([]);
       expect(mockCheckbox).toHaveBeenCalledTimes(1);
     });
+
+    it("falls back to 'unknown error' when an unknown app has no error message", async () => {
+      mockCheckbox.mockResolvedValueOnce([]);
+
+      const result = await selectApps(
+        [],
+        [],
+        // No `error` property — exercises the `?? "unknown error"` branch.
+        [makeApp("Mystery", "unknown")]
+      );
+
+      expect(result).toEqual([]);
+    });
   });
 
   describe("confirmUnseal", () => {

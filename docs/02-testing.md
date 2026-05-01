@@ -29,14 +29,14 @@ Effective Tier A checklist: L1 ✅ + L2 ✅ + G1 ✅ + D1 N/A(=✅) → **Tier A
 
 ### Mocking Strategy
 
-All modules use `Bun.spawn` or `child_process.exec` to run system commands (`xattr`, `sudo`). Tests mock the spawn/exec layer:
+All modules use `child_process.exec` to run system commands (`xattr`, `sudo`). Tests mock the exec layer:
 
 ```ts
 // Mock pattern: inject command executor
-import { mock } from "bun:test"
+import { vi } from "vitest"
 
 // scanner.ts accepts optional executor for testing
-const mockExec = mock(() => Promise.resolve({
+const mockExec = vi.fn(() => Promise.resolve({
   stdout: "com.apple.quarantine: ...",
   stderr: ""
 }))
@@ -125,10 +125,10 @@ Spawn the actual CLI binary as a child process to verify the CLI flags, non-inte
 
 | Case                              | Method                                           | Asserts                                           |
 |-----------------------------------|--------------------------------------------------|---------------------------------------------------|
-| No quarantined apps → exit 0      | `Bun.spawn(["node", "dist/index.js"])` with `UNSEAL_MOCK=1` | stdout contains "already unsealed", exit code 0  |
+| No quarantined apps → exit 0      | `Bun.spawn(["bun", "dist/index.js"])` with `UNSEAL_MOCK=1` | stdout contains "already unsealed", exit code 0  |
 | Non-interactive (piped stdin)     | Spawn with stdin closed (not a TTY)              | stdout contains "Interactive terminal required", exit code 0 |
-| `--help` flag                     | `Bun.spawn(["node", "dist/index.js", "--help"])` | stdout contains usage text, exit code 0           |
-| `--version` flag                  | `Bun.spawn(["node", "dist/index.js", "--version"])` | stdout matches package.json version            |
+| `--help` flag                     | `Bun.spawn(["bun", "dist/index.js", "--help"])` | stdout contains usage text, exit code 0           |
+| `--version` flag                  | `Bun.spawn(["bun", "dist/index.js", "--version"])` | stdout matches package.json version            |
 
 **Design rationale**: These tests verify behavior that is defined in the architecture (CLI flags, TTY detection, `UNSEAL_MOCK` seam) — not test-only features. The `UNSEAL_MOCK=1` executor swap is a first-class abstraction in `src/exec.ts`, shared by both production mock mode and tests.
 

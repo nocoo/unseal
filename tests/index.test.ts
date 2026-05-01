@@ -108,6 +108,26 @@ describe("CLI entry point (real run())", () => {
     expect(output).toContain("Interactive terminal required");
   });
 
+  it("uses process.stdin.isTTY when isTTY option is omitted", async () => {
+    // Force the default-branch (`options.isTTY ?? process.stdin.isTTY`) to evaluate.
+    const original = process.stdin.isTTY;
+    Object.defineProperty(process.stdin, "isTTY", {
+      value: false,
+      configurable: true,
+    });
+    try {
+      const code = await run({ args: [] });
+      expect(code).toBe(0);
+      const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+      expect(output).toContain("Interactive terminal required");
+    } finally {
+      Object.defineProperty(process.stdin, "isTTY", {
+        value: original,
+        configurable: true,
+      });
+    }
+  });
+
   // --- Scan confirmation ---
 
   it("exits 0 with 'Cancelled' when user declines scan confirm", async () => {
@@ -249,6 +269,38 @@ describe("CLI entry point (real run())", () => {
     mockSelectApps.mockRejectedValueOnce(new TypeError("something broke"));
 
     expect(run({ isTTY: true })).rejects.toThrow("something broke");
+  });
+
+  it("re-throws non-ExitPromptError from the scan-confirm prompt", async () => {
+    // Hits the `throw err;` branch in the initial confirm() catch (index.ts line 75).
+    mockConfirmScan.mockRejectedValueOnce(new RangeError("scan boom"));
+
+    await expect(run({ isTTY: true })).rejects.toThrow("scan boom");
+    expect(mockListApps).not.toHaveBeenCalled();
+  });
+
+  it("invokes the onProgress callback passed to listApps (writes scanning line)", async () => {
+    // Force the mock to actually call the onProgress arg so the
+    // `process.stdout.write` arrow inside run() executes.
+    mockListApps.mockImplementationOnce(async (
+      _exec: any,
+      _dir: any,
+      _entries: any,
+      onProgress: (name: string) => void,
+    ) => {
+      onProgress("Foo.app");
+      return [makeApp("Foo", "unsealed")];
+    });
+
+    const code = await run({ isTTY: true });
+
+    expect(code).toBe(0);
+    // The onProgress callback writes the "Scanning…" line to stdout.
+    const writes = (stdoutSpy.mock.calls as any[][])
+      .map((c) => String(c[0]))
+      .join("");
+    expect(writes).toContain("Scanning");
+    expect(writes).toContain("Foo.app");
   });
 
   // --- Sudo ---

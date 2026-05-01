@@ -88,5 +88,18 @@ describe("unseal", () => {
       const results = await unsealApps([], exec);
       expect(results).toEqual([]);
     });
+
+    it("falls back to 'xattr exited with code N' when stderr is empty on failure", async () => {
+      const exec: Executor = async () => ({
+        stdout: "",
+        stderr: "   ",
+        exitCode: 2,
+      });
+
+      const results = await unsealApps([makeApp("Silent")], exec);
+
+      expect(results[0].success).toBe(false);
+      expect(results[0].error).toBe("xattr exited with code 2");
+    });
   });
 });
