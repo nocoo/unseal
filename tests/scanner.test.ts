@@ -1,4 +1,7 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
+import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { listApps } from "../src/scanner.js";
 import type { Executor, ExecResult } from "../src/exec.js";
 
@@ -174,6 +177,19 @@ describe("scanner", () => {
       expect(broken.error).toBe("permission denied");
     });
 
+    it("falls back to 'xattr exited with code N' when xattr fails with empty stderr", async () => {
+      const exec: Executor = async () => ({
+        stdout: "",
+        stderr: "",
+        exitCode: 5,
+      });
+
+      const result = await listApps(exec, "/apps", ["Quiet.app"]);
+
+      expect(result[0].status).toBe("unknown");
+      expect(result[0].error).toBe("xattr exited with code 5");
+    });
+
     it("scans custom directory path", async () => {
       const exec = makeExec({
         "xattr:/custom/path/App.app": {
@@ -309,6 +325,28 @@ describe("scanner", () => {
       const result = await listApps(exec, "/apps", ["X.app"]);
       expect(result).toHaveLength(1);
       expect(result[0].status).toBe("unsealed");
+    });
+
+    it("reads directory entries from disk when entries arg is omitted", async () => {
+      const dir = await mkdtemp(join(tmpdir(), "unseal-scanner-"));
+      try {
+        await mkdir(join(dir, "Foo.app"));
+        await mkdir(join(dir, "Bar.app"));
+        await writeFile(join(dir, "ignored.txt"), "");
+
+        const exec: Executor = async () => ({
+          stdout: "",
+          stderr: "",
+          exitCode: 0,
+        });
+
+        const result = await listApps(exec, dir);
+
+        expect(result.map((a) => a.name)).toEqual(["Bar.app", "Foo.app"]);
+        expect(result.every((a) => a.status === "unsealed")).toBe(true);
+      } finally {
+        await rm(dir, { recursive: true, force: true });
+      }
     });
   });
 });

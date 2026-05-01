@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { checkSudo } from "../src/sudo.js";
 import type { Executor } from "../src/exec.js";
 

@@ -1,4 +1,4 @@
-import { describe, it, expect, mock, beforeEach, afterEach, spyOn } from "bun:test";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createRequire } from "node:module";
 import type { AppInfo, UnsealResult } from "../src/types.js";
 import type { Executor } from "../src/exec.js";
@@ -7,25 +7,35 @@ const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 
 // --- Mock all dependencies before importing the real run() ---
-const mockListApps = mock<(...args: any[]) => Promise<AppInfo[]>>();
-const mockCheckSudo = mock<(...args: any[]) => Promise<boolean>>();
-const mockUnsealApps = mock<(...args: any[]) => Promise<UnsealResult[]>>();
-const mockSelectApps = mock<(...args: any[]) => Promise<AppInfo[]>>();
-const mockConfirmUnseal = mock<(...args: any[]) => Promise<boolean>>();
-const mockCreateExecutor = mock<() => Executor>();
-const mockConfirmScan = mock<(...args: any[]) => Promise<boolean>>();
+const {
+  mockListApps,
+  mockCheckSudo,
+  mockUnsealApps,
+  mockSelectApps,
+  mockConfirmUnseal,
+  mockCreateExecutor,
+  mockConfirmScan,
+} = vi.hoisted(() => ({
+  mockListApps: vi.fn<(...args: any[]) => Promise<AppInfo[]>>(),
+  mockCheckSudo: vi.fn<(...args: any[]) => Promise<boolean>>(),
+  mockUnsealApps: vi.fn<(...args: any[]) => Promise<UnsealResult[]>>(),
+  mockSelectApps: vi.fn<(...args: any[]) => Promise<AppInfo[]>>(),
+  mockConfirmUnseal: vi.fn<(...args: any[]) => Promise<boolean>>(),
+  mockCreateExecutor: vi.fn<() => Executor>(),
+  mockConfirmScan: vi.fn<(...args: any[]) => Promise<boolean>>(),
+}));
 
-mock.module("../src/scanner.js", () => ({ listApps: mockListApps }));
-mock.module("../src/sudo.js", () => ({ checkSudo: mockCheckSudo }));
-mock.module("../src/unseal.js", () => ({ unsealApps: mockUnsealApps }));
-mock.module("../src/prompt.js", () => ({
+vi.mock("../src/scanner.js", () => ({ listApps: mockListApps }));
+vi.mock("../src/sudo.js", () => ({ checkSudo: mockCheckSudo }));
+vi.mock("../src/unseal.js", () => ({ unsealApps: mockUnsealApps }));
+vi.mock("../src/prompt.js", () => ({
   selectApps: mockSelectApps,
   confirmUnseal: mockConfirmUnseal,
 }));
-mock.module("../src/exec.js", () => ({
+vi.mock("../src/exec.js", () => ({
   createExecutor: mockCreateExecutor,
 }));
-mock.module("@inquirer/prompts", () => ({
+vi.mock("@inquirer/prompts", () => ({
   confirm: mockConfirmScan,
 }));
 
@@ -46,9 +56,9 @@ function makeApp(
 }
 
 describe("CLI entry point (real run())", () => {
-  let logSpy: ReturnType<typeof spyOn>;
-  let errorSpy: ReturnType<typeof spyOn>;
-  let stdoutSpy: ReturnType<typeof spyOn>;
+  let logSpy: ReturnType<typeof vi.spyOn>;
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+  let stdoutSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
     mockListApps.mockReset();
@@ -63,9 +73,9 @@ describe("CLI entry point (real run())", () => {
       stderr: "",
       exitCode: 0,
     }));
-    logSpy = spyOn(console, "log").mockImplementation(() => undefined);
-    errorSpy = spyOn(console, "error").mockImplementation(() => undefined);
-    stdoutSpy = spyOn(process.stdout, "write").mockImplementation(() => true);
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => undefined);
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    stdoutSpy = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
   });
 
   afterEach(() => {
@@ -96,6 +106,26 @@ describe("CLI entry point (real run())", () => {
     expect(code).toBe(0);
     const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
     expect(output).toContain("Interactive terminal required");
+  });
+
+  it("uses process.stdin.isTTY when isTTY option is omitted", async () => {
+    // Force the default-branch (`options.isTTY ?? process.stdin.isTTY`) to evaluate.
+    const original = process.stdin.isTTY;
+    Object.defineProperty(process.stdin, "isTTY", {
+      value: false,
+      configurable: true,
+    });
+    try {
+      const code = await run({ args: [] });
+      expect(code).toBe(0);
+      const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
+      expect(output).toContain("Interactive terminal required");
+    } finally {
+      Object.defineProperty(process.stdin, "isTTY", {
+        value: original,
+        configurable: true,
+      });
+    }
   });
 
   // --- Scan confirmation ---
@@ -239,6 +269,38 @@ describe("CLI entry point (real run())", () => {
     mockSelectApps.mockRejectedValueOnce(new TypeError("something broke"));
 
     expect(run({ isTTY: true })).rejects.toThrow("something broke");
+  });
+
+  it("re-throws non-ExitPromptError from the scan-confirm prompt", async () => {
+    // Hits the `throw err;` branch in the initial confirm() catch (index.ts line 75).
+    mockConfirmScan.mockRejectedValueOnce(new RangeError("scan boom"));
+
+    await expect(run({ isTTY: true })).rejects.toThrow("scan boom");
+    expect(mockListApps).not.toHaveBeenCalled();
+  });
+
+  it("invokes the onProgress callback passed to listApps (writes scanning line)", async () => {
+    // Force the mock to actually call the onProgress arg so the
+    // `process.stdout.write` arrow inside run() executes.
+    mockListApps.mockImplementationOnce(async (
+      _exec: any,
+      _dir: any,
+      _entries: any,
+      onProgress: (name: string) => void,
+    ) => {
+      onProgress("Foo.app");
+      return [makeApp("Foo", "unsealed")];
+    });
+
+    const code = await run({ isTTY: true });
+
+    expect(code).toBe(0);
+    // The onProgress callback writes the "Scanning…" line to stdout.
+    const writes = (stdoutSpy.mock.calls as any[][])
+      .map((c) => String(c[0]))
+      .join("");
+    expect(writes).toContain("Scanning");
+    expect(writes).toContain("Foo.app");
   });
 
   // --- Sudo ---

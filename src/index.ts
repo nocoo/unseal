@@ -184,6 +184,7 @@ export async function run(options: RunOptions = {}): Promise<number> {
 import { fileURLToPath } from "node:url";
 import { realpathSync } from "node:fs";
 
+/* v8 ignore start -- bin entry: only runs when executed as a script */
 const thisFile = fileURLToPath(import.meta.url);
 const mainFile = process.argv[1] ? realpathSync(process.argv[1]) : "";
 const isMainModule = thisFile === mainFile;
@@ -196,3 +197,4 @@ if (isMainModule) {
     process.exitCode = 1;
   });
 }
+/* v8 ignore stop */
