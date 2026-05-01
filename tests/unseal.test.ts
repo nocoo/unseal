@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { unsealApps } from "../src/unseal.js";
 import type { Executor } from "../src/exec.js";
 import type { AppInfo } from "../src/types.js";

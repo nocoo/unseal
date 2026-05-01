@@ -1,4 +1,4 @@
-import { describe, it, expect } from "bun:test";
+import { describe, it, expect } from "vitest";
 import { listApps } from "../src/scanner.js";
 import type { Executor, ExecResult } from "../src/exec.js";
 

@@ -1,11 +1,13 @@
-import { describe, it, expect, mock, beforeEach } from "bun:test";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { AppInfo } from "../src/types.js";
 
 // Mock @inquirer/prompts before importing prompt module
-const mockCheckbox = mock<(config: any) => Promise<any[]>>();
-const mockConfirm = mock<(config: any) => Promise<boolean>>();
+const { mockCheckbox, mockConfirm } = vi.hoisted(() => ({
+  mockCheckbox: vi.fn<(config: any) => Promise<any[]>>(),
+  mockConfirm: vi.fn<(config: any) => Promise<boolean>>(),
+}));
 
-mock.module("@inquirer/prompts", () => ({
+vi.mock("@inquirer/prompts", () => ({
   checkbox: mockCheckbox,
   confirm: mockConfirm,
 }));
