@@ -1,5 +1,5 @@
 # L1: Unit Tests
-bun run test
+bun run test:coverage
 
 # G1: Static Analysis
 bun run typecheck
