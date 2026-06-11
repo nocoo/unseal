@@ -237,7 +237,7 @@ This is used by `scanner.ts`, `unseal.ts`, and `sudo.ts` via dependency injectio
 - **Dev runtime**: Bun
 - **Build**: `bun build src/index.ts --target=node --outdir=dist`
 - **Output**: Node-compatible ESM bundle in `dist/`
-- **Publish**: `npm publish` — works on Node 18+
+- **Publish**: `npm publish` — requires Node `^20.19 || ^22.13 || >=24` (driven by `@inquirer/prompts@8` + `eslint@10` engines floor)
 
 **package.json key fields:**
 
@@ -248,7 +248,7 @@ This is used by `scanner.ts`, `unseal.ts`, and `sudo.ts` via dependency injectio
   "type": "module",
   "bin": { "unseal": "./dist/index.js" },
   "files": ["dist"],
-  "engines": { "node": ">=18" }
+  "engines": { "node": "^20.19.0 || ^22.13.0 || >=24.0.0" }
 }
 ```
 

@@ -69,7 +69,7 @@ tests/
 | 运行时 | [Bun](https://bun.sh/)（开发、测试、构建） |
 | TUI | [@inquirer/prompts](https://npm.im/@inquirer/prompts)（checkbox + confirm） |
 | 终端着色 | [chalk](https://npm.im/chalk) |
-| 目标平台 | Node.js >= 18（ESM bundle，`bun build --target=node`） |
+| 目标平台 | Node.js ^20.19 \|\| ^22.13 \|\| >=24（ESM bundle，`bun build --target=node`） |
 
 ## 开发
 
