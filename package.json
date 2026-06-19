@@ -38,6 +38,9 @@
     "@inquirer/prompts": "^8.5.2",
     "chalk": "^5.4.0"
   },
+  "overrides": {
+    "vite": "^8.0.16"
+  },
   "lint-staged": {
     "*.{ts,tsx}": [
       "eslint --max-warnings=0"
