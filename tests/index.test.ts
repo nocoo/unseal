@@ -12,7 +12,6 @@ const {
   mockCheckSudo,
   mockUnsealApps,
   mockSelectApps,
-  mockConfirmUnseal,
   mockCreateExecutor,
   mockConfirmScan,
 } = vi.hoisted(() => ({
@@ -20,7 +19,6 @@ const {
   mockCheckSudo: vi.fn<(...args: any[]) => Promise<boolean>>(),
   mockUnsealApps: vi.fn<(...args: any[]) => Promise<UnsealResult[]>>(),
   mockSelectApps: vi.fn<(...args: any[]) => Promise<AppInfo[]>>(),
-  mockConfirmUnseal: vi.fn<(...args: any[]) => Promise<boolean>>(),
   mockCreateExecutor: vi.fn<() => Executor>(),
   mockConfirmScan: vi.fn<(...args: any[]) => Promise<boolean>>(),
 }));
@@ -30,7 +28,6 @@ vi.mock("../src/sudo.js", () => ({ checkSudo: mockCheckSudo }));
 vi.mock("../src/unseal.js", () => ({ unsealApps: mockUnsealApps }));
 vi.mock("../src/prompt.js", () => ({
   selectApps: mockSelectApps,
-  confirmUnseal: mockConfirmUnseal,
 }));
 vi.mock("../src/exec.js", () => ({
   createExecutor: mockCreateExecutor,
@@ -65,7 +62,6 @@ describe("CLI entry point (real run())", () => {
     mockCheckSudo.mockReset();
     mockUnsealApps.mockReset();
     mockSelectApps.mockReset();
-    mockConfirmUnseal.mockReset();
     mockConfirmScan.mockReset();
     mockConfirmScan.mockResolvedValue(true); // default: user accepts scan
     mockCreateExecutor.mockReturnValue(async () => ({
@@ -220,19 +216,6 @@ describe("CLI entry point (real run())", () => {
     expect(mockUnsealApps).not.toHaveBeenCalled();
   });
 
-  it("exits when user declines confirmation", async () => {
-    const app = makeApp("A", "quarantined");
-    mockListApps.mockResolvedValueOnce([app]);
-    mockSelectApps.mockResolvedValueOnce([app]);
-    mockConfirmUnseal.mockResolvedValueOnce(false);
-
-    const code = await run({ isTTY: true });
-
-    expect(code).toBe(0);
-    expect(mockCheckSudo).not.toHaveBeenCalled();
-    expect(mockUnsealApps).not.toHaveBeenCalled();
-  });
-
   it("exits gracefully on Ctrl+C (ExitPromptError) during select", async () => {
     const exitErr = new Error("User force closed the prompt");
     exitErr.name = "ExitPromptError";
@@ -242,23 +225,6 @@ describe("CLI entry point (real run())", () => {
     const code = await run({ isTTY: true });
 
     expect(code).toBe(0);
-    expect(mockUnsealApps).not.toHaveBeenCalled();
-    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
-    expect(output).toContain("Cancelled.");
-  });
-
-  it("exits gracefully on Ctrl+C (ExitPromptError) during confirm", async () => {
-    const app = makeApp("A", "quarantined");
-    const exitErr = new Error("User force closed the prompt");
-    exitErr.name = "ExitPromptError";
-    mockListApps.mockResolvedValueOnce([app]);
-    mockSelectApps.mockResolvedValueOnce([app]);
-    mockConfirmUnseal.mockRejectedValueOnce(exitErr);
-
-    const code = await run({ isTTY: true });
-
-    expect(code).toBe(0);
-    expect(mockCheckSudo).not.toHaveBeenCalled();
     expect(mockUnsealApps).not.toHaveBeenCalled();
     const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
     expect(output).toContain("Cancelled.");
@@ -309,7 +275,6 @@ describe("CLI entry point (real run())", () => {
     const app = makeApp("A", "quarantined");
     mockListApps.mockResolvedValueOnce([app]);
     mockSelectApps.mockResolvedValueOnce([app]);
-    mockConfirmUnseal.mockResolvedValueOnce(true);
     mockCheckSudo.mockResolvedValueOnce(false);
 
     const code = await run({ isTTY: true });
@@ -331,7 +296,6 @@ describe("CLI entry point (real run())", () => {
       makeApp("C", "unsealed"),
     ]);
     mockSelectApps.mockResolvedValueOnce([app1, app2]);
-    mockConfirmUnseal.mockResolvedValueOnce(true);
     mockCheckSudo.mockResolvedValueOnce(true);
     mockUnsealApps.mockResolvedValueOnce([
       { app: app1, success: true },
@@ -350,7 +314,6 @@ describe("CLI entry point (real run())", () => {
     const uApp = makeApp("B", "unknown", "permission denied");
     mockListApps.mockResolvedValueOnce([qApp, uApp]);
     mockSelectApps.mockResolvedValueOnce([qApp]);
-    mockConfirmUnseal.mockResolvedValueOnce(true);
     mockCheckSudo.mockResolvedValueOnce(true);
     mockUnsealApps.mockResolvedValueOnce([
       { app: qApp, success: true },
@@ -368,7 +331,6 @@ describe("CLI entry point (real run())", () => {
     const app2 = makeApp("B", "quarantined");
     mockListApps.mockResolvedValueOnce([app1, app2]);
     mockSelectApps.mockResolvedValueOnce([app1, app2]);
-    mockConfirmUnseal.mockResolvedValueOnce(true);
     mockCheckSudo.mockResolvedValueOnce(true);
     mockUnsealApps.mockResolvedValueOnce([
       { app: app1, success: true },

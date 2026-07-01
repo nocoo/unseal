@@ -4,7 +4,7 @@ import { confirm } from "@inquirer/prompts";
 import { createRequire } from "node:module";
 import { createExecutor } from "./exec.js";
 import { listApps } from "./scanner.js";
-import { selectApps, confirmUnseal } from "./prompt.js";
+import { selectApps } from "./prompt.js";
 import { checkSudo } from "./sudo.js";
 import { unsealApps } from "./unseal.js";
 import type { AppInfo } from "./types.js";
@@ -123,17 +123,12 @@ export async function run(options: RunOptions = {}): Promise<number> {
     return 0;
   }
 
-  // 5. Multi-select prompt + 6. Confirm
+  // 5. Multi-select prompt (selection itself is the confirmation)
   let selected: AppInfo[];
-  let confirmed: boolean;
   try {
     selected = await selectApps(quarantined, unsealed, unknown);
     if (selected.length === 0) {
-      return 0;
-    }
-
-    confirmed = await confirmUnseal(selected);
-    if (!confirmed) {
+      console.log(chalk.dim("\n  Nothing selected.\n"));
       return 0;
     }
   } catch (err: unknown) {

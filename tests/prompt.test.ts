@@ -2,18 +2,16 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import type { AppInfo } from "../src/types.js";
 
 // Mock @inquirer/prompts before importing prompt module
-const { mockCheckbox, mockConfirm } = vi.hoisted(() => ({
+const { mockCheckbox } = vi.hoisted(() => ({
   mockCheckbox: vi.fn<(config: any) => Promise<any[]>>(),
-  mockConfirm: vi.fn<(config: any) => Promise<boolean>>(),
 }));
 
 vi.mock("@inquirer/prompts", () => ({
   checkbox: mockCheckbox,
-  confirm: mockConfirm,
 }));
 
 // Import after mocking
-const { selectApps, confirmUnseal } = await import("../src/prompt.js");
+const { selectApps } = await import("../src/prompt.js");
 
 function makeApp(
   name: string,
@@ -26,7 +24,6 @@ function makeApp(
 describe("prompt", () => {
   beforeEach(() => {
     mockCheckbox.mockClear();
-    mockConfirm.mockClear();
   });
 
   describe("selectApps", () => {
@@ -57,17 +54,32 @@ describe("prompt", () => {
       expect(result).toEqual([]);
     });
 
-    it("passes quarantined apps as checkbox choices", async () => {
+    it("passes quarantined apps as checkbox choices with checked=true by default", async () => {
       const q1 = makeApp("X", "quarantined");
       const q2 = makeApp("Y", "quarantined");
       mockCheckbox.mockResolvedValueOnce([]);
 
-      await selectApps(q1.status === "quarantined" ? [q1, q2] : [], [], []);
+      await selectApps([q1, q2], [], []);
 
       const config = mockCheckbox.mock.calls[0][0];
       expect(config.choices).toHaveLength(2);
       expect(config.choices[0].value).toEqual(q1);
       expect(config.choices[1].value).toEqual(q2);
+      expect(config.choices[0].checked).toBe(true);
+      expect(config.choices[1].checked).toBe(true);
+    });
+
+    it("customises the checkbox theme icons to widen the cursor↔circle gap", async () => {
+      mockCheckbox.mockResolvedValueOnce([]);
+
+      await selectApps([makeApp("A", "quarantined")], [], []);
+
+      const config = mockCheckbox.mock.calls[0][0];
+      // Both icons carry a leading space to visually separate them from the cursor.
+      expect(config.theme.icon.checked.endsWith("◉")).toBe(true);
+      expect(config.theme.icon.checked.startsWith(" ") || /\s◉$/.test(config.theme.icon.checked)).toBe(true);
+      expect(config.theme.icon.unchecked).toMatch(/^\s+◯$/);
+      expect(config.theme.icon.cursor).toBe("❯");
     });
 
     it("handles unknown status apps in display", async () => {
@@ -94,25 +106,6 @@ describe("prompt", () => {
       );
 
       expect(result).toEqual([]);
-    });
-  });
-
-  describe("confirmUnseal", () => {
-    it("returns true when user confirms", async () => {
-      mockConfirm.mockResolvedValueOnce(true);
-
-      const result = await confirmUnseal([makeApp("A", "quarantined")]);
-
-      expect(result).toBe(true);
-      expect(mockConfirm).toHaveBeenCalledTimes(1);
-    });
-
-    it("returns false when user declines", async () => {
-      mockConfirm.mockResolvedValueOnce(false);
-
-      const result = await confirmUnseal([makeApp("A", "quarantined")]);
-
-      expect(result).toBe(false);
     });
   });
 });
