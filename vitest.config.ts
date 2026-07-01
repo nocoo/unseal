@@ -18,11 +18,10 @@ export default defineConfig({
       exclude: [
         // Type definitions only — no runtime code.
         "**/types.ts",
-        // Mock executor only runs when UNSEAL_MOCK=1, used for manual smoke
-        // testing the CLI against fake xattr/spctl output. The production
-        // path uses the real executor; coverage of the mock branch would
-        // require running the CLI with the env var set.
-        "**/mock-executor.ts",
+        // Dev-only entry: exercised manually via `bun run debug`, never
+        // shipped (tree-shaken from dist/ because src/index.ts doesn't
+        // import it). Not worth unit-testing the scenario harness itself.
+        "**/debug.ts",
       ],
       thresholds: {
         statements: 95,

@@ -8,6 +8,7 @@ import { selectApps } from "./prompt.js";
 import { checkSudo } from "./sudo.js";
 import { unsealApps } from "./unseal.js";
 import type { AppInfo } from "./types.js";
+import type { Executor } from "./exec.js";
 
 const require = createRequire(import.meta.url);
 const { version: VERSION } = require("../package.json") as { version: string };
@@ -30,6 +31,21 @@ const HELP_TEXT = `
 export interface RunOptions {
   args?: string[];
   isTTY?: boolean;
+  /**
+   * Optional executor override. When set, the built-in `createExecutor()`
+   * is skipped entirely — used by the debug entry to inject a scripted
+   * fake without touching the production path.
+   */
+  exec?: Executor;
+  /**
+   * Optional scanner override. When set, replaces the real `listApps()`
+   * scan of `/Applications` with a canned list. Used by the debug entry
+   * to feed known scenarios into the UI.
+   */
+  scanApps?: (
+    exec: Executor,
+    onProgress: (name: string) => void,
+  ) => Promise<AppInfo[]>;
 }
 
 /**
@@ -58,7 +74,7 @@ export async function run(options: RunOptions = {}): Promise<number> {
     return 0;
   }
 
-  const exec = createExecutor();
+  const exec = options.exec ?? createExecutor();
 
   // 1. Confirm scan
   let proceed: boolean;
@@ -80,7 +96,9 @@ export async function run(options: RunOptions = {}): Promise<number> {
   }
 
   // 2. Scan apps with progress indicator
-  const apps = await listApps(exec, undefined, undefined, (name) => {
+  const scan = options.scanApps ?? ((e, onProgress) =>
+    listApps(e, undefined, undefined, onProgress));
+  const apps = await scan(exec, (name) => {
     process.stdout.write(`\r\x1b[K  Scanning…  ${name}`);
   });
   process.stdout.write("\r\x1b[K"); // clear scanning line

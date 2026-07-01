@@ -1,5 +1,4 @@
 import { execFile } from "node:child_process";
-import { createMockExecutor } from "./mock-executor.js";
 
 export interface ExecResult {
   stdout: string;
@@ -12,7 +11,7 @@ export type Executor = (
   args: string[]
 ) => Promise<ExecResult>;
 
-function createRealExecutor(): Executor {
+export function createExecutor(): Executor {
   return (cmd, args) =>
     new Promise((resolve) => {
       execFile(cmd, args, { encoding: "utf-8" }, (error, stdout, stderr) => {
@@ -31,11 +30,4 @@ function createRealExecutor(): Executor {
         resolve({ stdout: stdout ?? "", stderr: stderr ?? "", exitCode: 0 });
       });
     });
-}
-
-export function createExecutor(): Executor {
-  if (process.env.UNSEAL_MOCK === "1") {
-    return createMockExecutor();
-  }
-  return createRealExecutor();
 }

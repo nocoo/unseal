@@ -11,6 +11,7 @@
   ],
   "scripts": {
     "dev": "bun run src/index.ts",
+    "debug": "bun run src/debug.ts",
     "build": "bun build src/index.ts --target=node --outdir=dist",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
