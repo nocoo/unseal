@@ -13,14 +13,12 @@ const {
   mockUnsealApps,
   mockSelectApps,
   mockCreateExecutor,
-  mockConfirmScan,
 } = vi.hoisted(() => ({
   mockListApps: vi.fn<(...args: any[]) => Promise<AppInfo[]>>(),
   mockCheckSudo: vi.fn<(...args: any[]) => Promise<boolean>>(),
   mockUnsealApps: vi.fn<(...args: any[]) => Promise<UnsealResult[]>>(),
   mockSelectApps: vi.fn<(...args: any[]) => Promise<AppInfo[]>>(),
   mockCreateExecutor: vi.fn<() => Executor>(),
-  mockConfirmScan: vi.fn<(...args: any[]) => Promise<boolean>>(),
 }));
 
 vi.mock("../src/scanner.js", () => ({ listApps: mockListApps }));
@@ -31,9 +29,6 @@ vi.mock("../src/prompt.js", () => ({
 }));
 vi.mock("../src/exec.js", () => ({
   createExecutor: mockCreateExecutor,
-}));
-vi.mock("@inquirer/prompts", () => ({
-  confirm: mockConfirmScan,
 }));
 
 // Import the REAL run() after mocking its dependencies
@@ -62,8 +57,6 @@ describe("CLI entry point (real run())", () => {
     mockCheckSudo.mockReset();
     mockUnsealApps.mockReset();
     mockSelectApps.mockReset();
-    mockConfirmScan.mockReset();
-    mockConfirmScan.mockResolvedValue(true); // default: user accepts scan
     mockCreateExecutor.mockReturnValue(async () => ({
       stdout: "",
       stderr: "",
@@ -122,42 +115,6 @@ describe("CLI entry point (real run())", () => {
         configurable: true,
       });
     }
-  });
-
-  // --- Scan confirmation ---
-
-  it("exits 0 with 'Cancelled' when user declines scan confirm", async () => {
-    mockConfirmScan.mockResolvedValueOnce(false);
-
-    const code = await run({ isTTY: true });
-
-    expect(code).toBe(0);
-    expect(mockListApps).not.toHaveBeenCalled();
-    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
-    expect(output).toContain("Cancelled.");
-  });
-
-  it("exits 0 on Ctrl+C during scan confirm (ExitPromptError)", async () => {
-    const exitErr = new Error("User force closed the prompt");
-    exitErr.name = "ExitPromptError";
-    mockConfirmScan.mockRejectedValueOnce(exitErr);
-
-    const code = await run({ isTTY: true });
-
-    expect(code).toBe(0);
-    expect(mockListApps).not.toHaveBeenCalled();
-    const output = logSpy.mock.calls.map((c: any[]) => String(c[0])).join("\n");
-    expect(output).toContain("Cancelled.");
-  });
-
-  it("proceeds to scan when user accepts confirm", async () => {
-    mockConfirmScan.mockResolvedValueOnce(true);
-    mockListApps.mockResolvedValueOnce([makeApp("A", "unsealed")]);
-
-    const code = await run({ isTTY: true });
-
-    expect(code).toBe(0);
-    expect(mockListApps).toHaveBeenCalled();
   });
 
   // --- Scan results ---
@@ -235,14 +192,6 @@ describe("CLI entry point (real run())", () => {
     mockSelectApps.mockRejectedValueOnce(new TypeError("something broke"));
 
     expect(run({ isTTY: true })).rejects.toThrow("something broke");
-  });
-
-  it("re-throws non-ExitPromptError from the scan-confirm prompt", async () => {
-    // Hits the `throw err;` branch in the initial confirm() catch (index.ts line 75).
-    mockConfirmScan.mockRejectedValueOnce(new RangeError("scan boom"));
-
-    await expect(run({ isTTY: true })).rejects.toThrow("scan boom");
-    expect(mockListApps).not.toHaveBeenCalled();
   });
 
   it("invokes the onProgress callback passed to listApps (writes scanning line)", async () => {
