@@ -98,7 +98,7 @@ function app(
 function pickScenario(argv: string[]): { key: string; scenario: Scenario } {
   const key = argv[0] ?? "mixed";
   if (key === "--list" || key === "-l") {
-    console.log(chalk.bold("Available scenarios:\n"));
+    console.log(chalk.bold("\n  Available scenarios:\n"));
     for (const [k, v] of Object.entries(SCENARIOS)) {
       console.log(`  ${chalk.cyan(k.padEnd(18))} ${chalk.dim(v.description)}`);
     }
@@ -107,9 +107,9 @@ function pickScenario(argv: string[]): { key: string; scenario: Scenario } {
   }
   const scenario = SCENARIOS[key];
   if (!scenario) {
-    console.error(chalk.red(`unknown scenario: ${key}`));
+    console.error(chalk.red(`\n  unknown scenario: ${key}`));
     console.error(
-      chalk.dim(`available: ${Object.keys(SCENARIOS).join(", ")}`),
+      chalk.dim(`  available: ${Object.keys(SCENARIOS).join(", ")}\n`),
     );
     process.exit(2);
   }
@@ -163,7 +163,7 @@ async function main(): Promise<void> {
   console.log(
     chalk.magenta.bold(`\n  🧪 DEBUG MODE — scenario: ${key}`),
   );
-  console.log(chalk.dim(`     ${scenario.description}\n`));
+  console.log(chalk.dim(`  ${scenario.description}\n`));
 
   const failures = new Set(scenario.unsealFailures ?? []);
   const exec = createDebugExecutor(failures);

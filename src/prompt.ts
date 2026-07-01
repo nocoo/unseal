@@ -37,10 +37,7 @@ export async function selectApps(
 
   console.log();
   console.log(
-    chalk.red.bold("  ⚠  Only unseal apps from trusted sources.")
-  );
-  console.log(
-    chalk.dim("     Selection confirms — Enter proceeds to sudo.")
+    chalk.red.bold("  ⚠ Only unseal apps from trusted sources.")
   );
   console.log();
 

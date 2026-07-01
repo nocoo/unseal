@@ -70,7 +70,7 @@ export async function run(options: RunOptions = {}): Promise<number> {
 
   // Non-interactive detection
   if (!isTTY) {
-    console.log("Interactive terminal required. Run unseal in a terminal.");
+    console.log("\n  Interactive terminal required. Run unseal in a terminal.\n");
     return 0;
   }
 
@@ -124,7 +124,7 @@ export async function run(options: RunOptions = {}): Promise<number> {
         chalk.red("\n  ✗ Could not determine quarantine status for any app.")
       );
       console.log(
-        chalk.dim("    Check file permissions or run with elevated access.\n")
+        chalk.dim("  Check file permissions or run with elevated access.\n")
       );
       return 1;
     }
