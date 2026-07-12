@@ -15,8 +15,9 @@
     "build": "bun build src/index.ts --target=node --outdir=dist",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint . --max-warnings=0",
-    "lint:fix": "eslint . --fix",
+    "lint": "biome check --error-on-warnings",
+    "lint:fix": "biome check --write --error-on-warnings",
+    "format": "biome format --write",
     "typecheck": "tsc --noEmit",
     "prepare": "husky"
   },
@@ -25,14 +26,11 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "@eslint/js": "^10.0.1",
+    "@biomejs/biome": "2.5.3",
     "@types/node": "26.1.0",
     "@vitest/coverage-v8": "4.1.9",
-    "eslint": "10.6.0",
     "husky": "^9.1.7",
-    "jiti": "^2.6.1",
     "typescript": "6.0.3",
-    "typescript-eslint": "8.62.1",
     "vitest": "4.1.9"
   },
   "dependencies": {
@@ -41,10 +39,5 @@
   },
   "overrides": {
     "vite": "^8.0.16"
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "eslint --max-warnings=0"
-    ]
   }
 }

@@ -17,8 +17,8 @@
  * The `dist/` npm package contains zero debug code.
  */
 import chalk from "chalk";
-import { run } from "./index.js";
 import type { Executor } from "./exec.js";
+import { run } from "./index.js";
 import type { AppInfo } from "./types.js";
 
 interface Scenario {
@@ -33,8 +33,7 @@ interface Scenario {
 
 const SCENARIOS: Record<string, Scenario> = {
   mixed: {
-    description:
-      "typical machine: many unsealed, a few quarantined, one unreadable",
+    description: "typical machine: many unsealed, a few quarantined, one unreadable",
     apps: [
       app("Safari", "unsealed"),
       app("Xcode", "unsealed"),
@@ -57,11 +56,7 @@ const SCENARIOS: Record<string, Scenario> = {
   },
   "all-unsealed": {
     description: "nothing to do — exercises the early-exit path",
-    apps: [
-      app("Safari", "unsealed"),
-      app("Xcode", "unsealed"),
-      app("Terminal", "unsealed"),
-    ],
+    apps: [app("Safari", "unsealed"), app("Xcode", "unsealed"), app("Terminal", "unsealed")],
   },
   "with-unknown": {
     description: "one quarantined, some readable, some unreadable",
@@ -74,11 +69,7 @@ const SCENARIOS: Record<string, Scenario> = {
   },
   "with-failure": {
     description: "unseal succeeds for one app, fails for another",
-    apps: [
-      app("Lyre", "quarantined"),
-      app("Locked", "quarantined"),
-      app("Safari", "unsealed"),
-    ],
+    apps: [app("Lyre", "quarantined"), app("Locked", "quarantined"), app("Safari", "unsealed")],
     unsealFailures: ["Locked.app"],
   },
   empty: {
@@ -108,9 +99,7 @@ function pickScenario(argv: string[]): { key: string; scenario: Scenario } {
   const scenario = SCENARIOS[key];
   if (!scenario) {
     console.error(chalk.red(`\n  unknown scenario: ${key}`));
-    console.error(
-      chalk.dim(`  available: ${Object.keys(SCENARIOS).join(", ")}\n`),
-    );
+    console.error(chalk.dim(`  available: ${Object.keys(SCENARIOS).join(", ")}\n`));
     process.exit(2);
   }
   return { key, scenario };
@@ -160,9 +149,7 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
   const { key, scenario } = pickScenario(argv);
 
-  console.log(
-    chalk.magenta.bold(`\n  🧪 DEBUG MODE — scenario: ${key}`),
-  );
+  console.log(chalk.magenta.bold(`\n  🧪 DEBUG MODE — scenario: ${key}`));
   console.log(chalk.dim(`  ${scenario.description}\n`));
 
   const failures = new Set(scenario.unsealFailures ?? []);

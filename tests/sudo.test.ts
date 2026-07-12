@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { checkSudo } from "../src/sudo.js";
+import { describe, expect, it } from "vitest";
 import type { Executor } from "../src/exec.js";
+import { checkSudo } from "../src/sudo.js";
 
 describe("sudo", () => {
   describe("checkSudo", () => {

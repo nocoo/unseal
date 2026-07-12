@@ -6,10 +6,7 @@ export interface ExecResult {
   exitCode: number;
 }
 
-export type Executor = (
-  cmd: string,
-  args: string[]
-) => Promise<ExecResult>;
+export type Executor = (cmd: string, args: string[]) => Promise<ExecResult>;
 
 export function createExecutor(): Executor {
   return (cmd, args) =>

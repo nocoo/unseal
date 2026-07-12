@@ -1,7 +1,7 @@
-import { describe, it, expect } from "vitest";
-import { unsealApps } from "../src/unseal.js";
+import { describe, expect, it } from "vitest";
 import type { Executor } from "../src/exec.js";
 import type { AppInfo } from "../src/types.js";
+import { unsealApps } from "../src/unseal.js";
 
 function makeApp(name: string): AppInfo {
   return {

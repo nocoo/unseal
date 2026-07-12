@@ -1,29 +1,22 @@
-import { describe, it, expect } from "vitest";
-import { mkdtemp, mkdir, writeFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { describe, expect, it } from "vitest";
+import type { ExecResult, Executor } from "../src/exec.js";
 import { listApps } from "../src/scanner.js";
-import type { Executor, ExecResult } from "../src/exec.js";
 
 /**
  * Build a mock executor that dispatches on `cmd:path` composite key first,
  * then falls back to path-only key for backwards compatibility.
  * Example keys: "xattr:/apps/A.app", "spctl:/apps/A.app", or just "/apps/A.app".
  */
-function makeExec(
-  responses: Record<string, ExecResult>
-): Executor {
+function makeExec(responses: Record<string, ExecResult>): Executor {
   return async (cmd, args) => {
     const path = args[args.length - 1];
     const compositeKey = `${cmd}:${path}`;
-    return (
-      responses[compositeKey] ??
-      responses[path] ??
-      { stdout: "", stderr: "", exitCode: 0 }
-    );
+    return responses[compositeKey] ?? responses[path] ?? { stdout: "", stderr: "", exitCode: 0 };
   };
 }
-
 
 describe("scanner", () => {
   describe("listApps", () => {
@@ -49,11 +42,7 @@ describe("scanner", () => {
         "spctl:/apps/C.app": { stdout: "", stderr: "rejected", exitCode: 3 },
       });
 
-      const result = await listApps(exec, "/apps", [
-        "A.app",
-        "B.app",
-        "C.app",
-      ]);
+      const result = await listApps(exec, "/apps", ["A.app", "B.app", "C.app"]);
 
       expect(result).toHaveLength(3);
       expect(result.every((a) => a.status === "quarantined")).toBe(true);
@@ -70,11 +59,7 @@ describe("scanner", () => {
         "/apps/C.app": { stdout: "", stderr: "", exitCode: 0 },
       });
 
-      const result = await listApps(exec, "/apps", [
-        "A.app",
-        "B.app",
-        "C.app",
-      ]);
+      const result = await listApps(exec, "/apps", ["A.app", "B.app", "C.app"]);
 
       expect(result).toHaveLength(3);
       expect(result.every((a) => a.status === "unsealed")).toBe(true);
@@ -97,11 +82,7 @@ describe("scanner", () => {
         "spctl:/apps/C.app": { stdout: "", stderr: "rejected", exitCode: 3 },
       });
 
-      const result = await listApps(exec, "/apps", [
-        "A.app",
-        "B.app",
-        "C.app",
-      ]);
+      const result = await listApps(exec, "/apps", ["A.app", "B.app", "C.app"]);
 
       const quarantined = result.filter((a) => a.status === "quarantined");
       const unsealed = result.filter((a) => a.status === "unsealed");
@@ -138,17 +119,9 @@ describe("scanner", () => {
         "/apps/Middle.app": { stdout: "", stderr: "", exitCode: 0 },
       });
 
-      const result = await listApps(exec, "/apps", [
-        "Zebra.app",
-        "Alpha.app",
-        "Middle.app",
-      ]);
+      const result = await listApps(exec, "/apps", ["Zebra.app", "Alpha.app", "Middle.app"]);
 
-      expect(result.map((a) => a.name)).toEqual([
-        "Alpha.app",
-        "Middle.app",
-        "Zebra.app",
-      ]);
+      expect(result.map((a) => a.name)).toEqual(["Alpha.app", "Middle.app", "Zebra.app"]);
     });
 
     it("marks xattr command failure as unknown with error message", async () => {
@@ -164,10 +137,7 @@ describe("scanner", () => {
         return { stdout: "", stderr: "", exitCode: 0 };
       };
 
-      const result = await listApps(exec, "/apps", [
-        "Good.app",
-        "Broken.app",
-      ]);
+      const result = await listApps(exec, "/apps", ["Good.app", "Broken.app"]);
 
       const good = result.find((a) => a.name === "Good.app")!;
       const broken = result.find((a) => a.name === "Broken.app")!;
@@ -293,9 +263,7 @@ describe("scanner", () => {
         "Clean.app",
       ]);
 
-      const statuses = Object.fromEntries(
-        result.map((a) => [a.name, a.status])
-      );
+      const statuses = Object.fromEntries(result.map((a) => [a.name, a.status]));
       expect(statuses["SignedApp.app"]).toBe("unsealed");
       expect(statuses["UnsignedApp.app"]).toBe("quarantined");
       expect(statuses["Clean.app"]).toBe("unsealed");
@@ -485,8 +453,7 @@ describe("scanner", () => {
       // NOT peak concurrency of raw exec calls (a spctl is issued
       // strictly after its xattr resolves in the same chain).
       const { exec, state, releaseAll } = makeInstrumentedExec({
-        stdoutFor: (cmd) =>
-          cmd === "xattr" ? "com.apple.quarantine: 0081" : "",
+        stdoutFor: (cmd) => (cmd === "xattr" ? "com.apple.quarantine: 0081" : ""),
         exitCodeFor: (cmd) => (cmd === "spctl" ? 3 : 0),
       });
       const apps = Array.from({ length: 6 }, (_, i) => `App${i}.app`);
@@ -589,12 +556,7 @@ describe("scanner", () => {
         return { stdout: "", stderr: "", exitCode: 0 };
       };
 
-      const result = await listApps(exec, "/apps", [
-        "OK1.app",
-        "Boom.app",
-        "OK2.app",
-        "OK3.app",
-      ]);
+      const result = await listApps(exec, "/apps", ["OK1.app", "Boom.app", "OK2.app", "OK3.app"]);
 
       expect(result).toHaveLength(4);
       const boom = result.find((a) => a.name === "Boom.app")!;
@@ -649,16 +611,7 @@ describe("scanner", () => {
         return { stdout: "", stderr: "rejected", exitCode: 3 };
       };
 
-      const apps = [
-        "A.app",
-        "Q0.app",
-        "B.app",
-        "Q1.app",
-        "C.app",
-        "Q2.app",
-        "D.app",
-        "Q3.app",
-      ];
+      const apps = ["A.app", "Q0.app", "B.app", "Q1.app", "C.app", "Q2.app", "D.app", "Q3.app"];
       const result = await listApps(exec, "/apps", apps);
 
       for (const app of result) {

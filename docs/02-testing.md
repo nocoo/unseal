@@ -101,6 +101,7 @@ const mockExec = vi.fn(() => Promise.resolve({
 
 ## G1 — Static Analysis (pre-commit)
 
+- **Biome**: `biome check --error-on-warnings` (recommended lint rules, formatting, import organization)
 - **TypeScript**: `tsc --noEmit` (strict: true)
 - **0 error, 0 warning** policy
 
@@ -143,10 +144,11 @@ Spawn the actual CLI binary as a child process to verify the CLI flags, non-inte
 
 ## Hook Mapping (husky)
 
-| Hook         | Runs          |
-|-------------|---------------|
-| pre-commit  | L1 + G1       |
-| pre-push    | L2 + G2       |
+| Automation   | Runs                                      |
+|-------------|-------------------------------------------|
+| pre-commit  | L1 + G1 (coverage, Biome, TypeScript)     |
+| pre-push    | L2 + G2                                   |
+| GitHub Actions | L1 + G1 + G2 (reusable quality workflow) |
 
 ---
 

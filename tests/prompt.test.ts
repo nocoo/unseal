@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppInfo } from "../src/types.js";
 
 // Mock @inquirer/prompts before importing prompt module
@@ -16,7 +16,7 @@ const { selectApps } = await import("../src/prompt.js");
 function makeApp(
   name: string,
   status: "quarantined" | "unsealed" | "unknown",
-  error?: string
+  error?: string,
 ): AppInfo {
   return { name: `${name}.app`, path: `/Applications/${name}.app`, status, error };
 }
@@ -32,11 +32,7 @@ describe("prompt", () => {
       const q2 = makeApp("B", "quarantined");
       mockCheckbox.mockResolvedValueOnce([q1]);
 
-      const result = await selectApps(
-        [q1, q2],
-        [makeApp("C", "unsealed")],
-        []
-      );
+      const result = await selectApps([q1, q2], [makeApp("C", "unsealed")], []);
 
       expect(result).toEqual([q1]);
       expect(mockCheckbox).toHaveBeenCalledTimes(1);
@@ -45,11 +41,7 @@ describe("prompt", () => {
     it("returns empty array when user selects nothing", async () => {
       mockCheckbox.mockResolvedValueOnce([]);
 
-      const result = await selectApps(
-        [makeApp("A", "quarantined")],
-        [],
-        []
-      );
+      const result = await selectApps([makeApp("A", "quarantined")], [], []);
 
       expect(result).toEqual([]);
     });
@@ -77,7 +69,9 @@ describe("prompt", () => {
       const config = mockCheckbox.mock.calls[0][0];
       // Both icons carry a leading space to visually separate them from the cursor.
       expect(config.theme.icon.checked.endsWith("◉")).toBe(true);
-      expect(config.theme.icon.checked.startsWith(" ") || /\s◉$/.test(config.theme.icon.checked)).toBe(true);
+      expect(
+        config.theme.icon.checked.startsWith(" ") || /\s◉$/.test(config.theme.icon.checked),
+      ).toBe(true);
       expect(config.theme.icon.unchecked).toMatch(/^\s+◯$/);
       expect(config.theme.icon.cursor).toBe("❯");
     });
@@ -88,7 +82,7 @@ describe("prompt", () => {
       const result = await selectApps(
         [makeApp("A", "quarantined")],
         [makeApp("B", "unsealed")],
-        [makeApp("C", "unknown", "permission denied")]
+        [makeApp("C", "unknown", "permission denied")],
       );
 
       expect(result).toEqual([]);
@@ -102,7 +96,7 @@ describe("prompt", () => {
         [],
         [],
         // No `error` property — exercises the `?? "unknown error"` branch.
-        [makeApp("Mystery", "unknown")]
+        [makeApp("Mystery", "unknown")],
       );
 
       expect(result).toEqual([]);

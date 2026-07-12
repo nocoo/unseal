@@ -1,13 +1,13 @@
 #!/usr/bin/env node
-import chalk from "chalk";
 import { createRequire } from "node:module";
-import { createExecutor } from "./exec.js";
-import { listApps } from "./scanner.js";
-import { selectApps } from "./prompt.js";
-import { checkSudo } from "./sudo.js";
-import { unsealApps } from "./unseal.js";
-import type { AppInfo } from "./types.js";
+import chalk from "chalk";
 import type { Executor } from "./exec.js";
+import { createExecutor } from "./exec.js";
+import { selectApps } from "./prompt.js";
+import { listApps } from "./scanner.js";
+import { checkSudo } from "./sudo.js";
+import type { AppInfo } from "./types.js";
+import { unsealApps } from "./unseal.js";
 
 const require = createRequire(import.meta.url);
 const { version: VERSION } = require("../package.json") as { version: string };
@@ -41,10 +41,7 @@ export interface RunOptions {
    * scan of `/Applications` with a canned list. Used by the debug entry
    * to feed known scenarios into the UI.
    */
-  scanApps?: (
-    exec: Executor,
-    onProgress: (name: string) => void,
-  ) => Promise<AppInfo[]>;
+  scanApps?: (exec: Executor, onProgress: (name: string) => void) => Promise<AppInfo[]>;
 }
 
 /**
@@ -76,8 +73,8 @@ export async function run(options: RunOptions = {}): Promise<number> {
   const exec = options.exec ?? createExecutor();
 
   // 1. Scan apps with progress indicator
-  const scan = options.scanApps ?? ((e, onProgress) =>
-    listApps(e, undefined, undefined, onProgress));
+  const scan =
+    options.scanApps ?? ((e, onProgress) => listApps(e, undefined, undefined, onProgress));
   const apps = await scan(exec, (name) => {
     process.stdout.write(`\r\x1b[K  Scanning…  ${name}`);
   });
@@ -89,31 +86,23 @@ export async function run(options: RunOptions = {}): Promise<number> {
 
   // 2. Warn about unknown status apps
   if (unknown.length > 0) {
-    console.log(
-      chalk.yellow(
-        `\n  ⚠ ${unknown.length} app(s) could not be read`
-      )
-    );
+    console.log(chalk.yellow(`\n  ⚠ ${unknown.length} app(s) could not be read`));
   }
 
   // 3. Early exit if nothing to unseal
   if (quarantined.length === 0) {
     if (unknown.length > 0 && unsealed.length === 0) {
       // All apps failed to scan — this is NOT "all unsealed"
-      console.log(
-        chalk.red("\n  ✗ Could not determine quarantine status for any app.")
-      );
-      console.log(
-        chalk.dim("  Check file permissions or run with elevated access.\n")
-      );
+      console.log(chalk.red("\n  ✗ Could not determine quarantine status for any app."));
+      console.log(chalk.dim("  Check file permissions or run with elevated access.\n"));
       return 1;
     }
     if (unknown.length > 0) {
       // Some succeeded (all unsealed), some failed
       console.log(
         chalk.yellow(
-          `\n  ✓ All readable apps are already unsealed (${unknown.length} could not be checked)\n`
-        )
+          `\n  ✓ All readable apps are already unsealed (${unknown.length} could not be checked)\n`,
+        ),
       );
     } else {
       console.log(chalk.green("\n  ✓ All apps are already unsealed\n"));
@@ -141,9 +130,7 @@ export async function run(options: RunOptions = {}): Promise<number> {
   // 5. Sudo check (only after user fully commits)
   const hasSudo = await checkSudo(exec);
   if (!hasSudo) {
-    console.error(
-      chalk.red("\n  ✗ Failed to obtain sudo privileges. Cannot unseal apps.\n")
-    );
+    console.error(chalk.red("\n  ✗ Failed to obtain sudo privileges. Cannot unseal apps.\n"));
     return 1;
   }
 
@@ -164,18 +151,16 @@ export async function run(options: RunOptions = {}): Promise<number> {
   const failures = results.filter((r) => !r.success);
   if (failures.length > 0) {
     console.log(
-      chalk.yellow(
-        `  ${results.length - failures.length} succeeded, ${failures.length} failed\n`
-      )
+      chalk.yellow(`  ${results.length - failures.length} succeeded, ${failures.length} failed\n`),
     );
   }
 
   return 0;
 }
 
+import { realpathSync } from "node:fs";
 // Only execute when run directly (not imported for testing)
 import { fileURLToPath } from "node:url";
-import { realpathSync } from "node:fs";
 
 /* v8 ignore start -- bin entry: only runs when executed as a script */
 const thisFile = fileURLToPath(import.meta.url);
@@ -183,11 +168,13 @@ const mainFile = process.argv[1] ? realpathSync(process.argv[1]) : "";
 const isMainModule = thisFile === mainFile;
 
 if (isMainModule) {
-  run().then((code) => {
-    process.exitCode = code;
-  }).catch((err) => {
-    console.error(err);
-    process.exitCode = 1;
-  });
+  run()
+    .then((code) => {
+      process.exitCode = code;
+    })
+    .catch((err) => {
+      console.error(err);
+      process.exitCode = 1;
+    });
 }
 /* v8 ignore stop */

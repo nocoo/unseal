@@ -77,19 +77,13 @@ export async function listApps(
     }
   }
 
-  const workers = Array.from({ length: Math.min(concurrency, appNames.length) }, () =>
-    worker(),
-  );
+  const workers = Array.from({ length: Math.min(concurrency, appNames.length) }, () => worker());
   await Promise.all(workers);
 
   return results.sort((a, b) => a.name.localeCompare(b.name));
 }
 
-async function scanOne(
-  exec: Executor,
-  dir: string,
-  name: string,
-): Promise<AppInfo> {
+async function scanOne(exec: Executor, dir: string, name: string): Promise<AppInfo> {
   const appPath = join(dir, name);
   try {
     const result = await exec("xattr", ["-l", appPath]);

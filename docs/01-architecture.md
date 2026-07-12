@@ -221,10 +221,14 @@ This is used by `scanner.ts`, `unseal.ts`, and `sudo.ts` via dependency injectio
 
 ### Dev
 
-| Package           | Purpose                      |
-|-------------------|------------------------------|
-| `typescript`      | Type checking                |
-| `@types/node`     | Node type definitions        |
+| Package                | Purpose                                  |
+|------------------------|------------------------------------------|
+| `@biomejs/biome`       | Linting, formatting, import organization |
+| `typescript`           | Type checking                            |
+| `@types/node`          | Node type definitions                    |
+| `vitest`               | Test runner                              |
+| `@vitest/coverage-v8`  | Coverage provider (V8)                   |
+| `husky`                | Git hooks (pre-commit / pre-push gates)  |
 
 ### Runtime & Test
 
@@ -237,7 +241,7 @@ This is used by `scanner.ts`, `unseal.ts`, and `sudo.ts` via dependency injectio
 - **Dev runtime**: Bun
 - **Build**: `bun build src/index.ts --target=node --outdir=dist`
 - **Output**: Node-compatible ESM bundle in `dist/`
-- **Publish**: `npm publish` — requires Node `^20.19 || ^22.13 || >=24` (driven by `@inquirer/prompts@8` + `eslint@10` engines floor)
+- **Publish**: `npm publish` — requires Node `^20.19 || ^22.13 || >=24` (driven by `@inquirer/prompts@8` engines floor)
 
 **package.json key fields:**
 

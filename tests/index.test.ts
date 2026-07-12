@@ -1,25 +1,20 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createRequire } from "node:module";
-import type { AppInfo, UnsealResult } from "../src/types.js";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { Executor } from "../src/exec.js";
+import type { AppInfo, UnsealResult } from "../src/types.js";
 
 const require = createRequire(import.meta.url);
 const pkg = require("../package.json") as { version: string };
 
 // --- Mock all dependencies before importing the real run() ---
-const {
-  mockListApps,
-  mockCheckSudo,
-  mockUnsealApps,
-  mockSelectApps,
-  mockCreateExecutor,
-} = vi.hoisted(() => ({
-  mockListApps: vi.fn<(...args: any[]) => Promise<AppInfo[]>>(),
-  mockCheckSudo: vi.fn<(...args: any[]) => Promise<boolean>>(),
-  mockUnsealApps: vi.fn<(...args: any[]) => Promise<UnsealResult[]>>(),
-  mockSelectApps: vi.fn<(...args: any[]) => Promise<AppInfo[]>>(),
-  mockCreateExecutor: vi.fn<() => Executor>(),
-}));
+const { mockListApps, mockCheckSudo, mockUnsealApps, mockSelectApps, mockCreateExecutor } =
+  vi.hoisted(() => ({
+    mockListApps: vi.fn<(...args: any[]) => Promise<AppInfo[]>>(),
+    mockCheckSudo: vi.fn<(...args: any[]) => Promise<boolean>>(),
+    mockUnsealApps: vi.fn<(...args: any[]) => Promise<UnsealResult[]>>(),
+    mockSelectApps: vi.fn<(...args: any[]) => Promise<AppInfo[]>>(),
+    mockCreateExecutor: vi.fn<() => Executor>(),
+  }));
 
 vi.mock("../src/scanner.js", () => ({ listApps: mockListApps }));
 vi.mock("../src/sudo.js", () => ({ checkSudo: mockCheckSudo }));
@@ -37,7 +32,7 @@ const { run } = await import("../src/index.js");
 function makeApp(
   name: string,
   status: "quarantined" | "unsealed" | "unknown",
-  error?: string
+  error?: string,
 ): AppInfo {
   return {
     name: `${name}.app`,
@@ -120,10 +115,7 @@ describe("CLI entry point (real run())", () => {
   // --- Scan results ---
 
   it("prints 'already unsealed' when all apps are unsealed", async () => {
-    mockListApps.mockResolvedValueOnce([
-      makeApp("A", "unsealed"),
-      makeApp("B", "unsealed"),
-    ]);
+    mockListApps.mockResolvedValueOnce([makeApp("A", "unsealed"), makeApp("B", "unsealed")]);
 
     const code = await run({ isTTY: true });
 
@@ -197,23 +189,18 @@ describe("CLI entry point (real run())", () => {
   it("invokes the onProgress callback passed to listApps (writes scanning line)", async () => {
     // Force the mock to actually call the onProgress arg so the
     // `process.stdout.write` arrow inside run() executes.
-    mockListApps.mockImplementationOnce(async (
-      _exec: any,
-      _dir: any,
-      _entries: any,
-      onProgress: (name: string) => void,
-    ) => {
-      onProgress("Foo.app");
-      return [makeApp("Foo", "unsealed")];
-    });
+    mockListApps.mockImplementationOnce(
+      async (_exec: any, _dir: any, _entries: any, onProgress: (name: string) => void) => {
+        onProgress("Foo.app");
+        return [makeApp("Foo", "unsealed")];
+      },
+    );
 
     const code = await run({ isTTY: true });
 
     expect(code).toBe(0);
     // The onProgress callback writes the "Scanning…" line to stdout.
-    const writes = (stdoutSpy.mock.calls as any[][])
-      .map((c) => String(c[0]))
-      .join("");
+    const writes = (stdoutSpy.mock.calls as any[][]).map((c) => String(c[0])).join("");
     expect(writes).toContain("Scanning");
     expect(writes).toContain("Foo.app");
   });
@@ -239,11 +226,7 @@ describe("CLI entry point (real run())", () => {
   it("calls unsealApps with selected apps on happy path", async () => {
     const app1 = makeApp("A", "quarantined");
     const app2 = makeApp("B", "quarantined");
-    mockListApps.mockResolvedValueOnce([
-      app1,
-      app2,
-      makeApp("C", "unsealed"),
-    ]);
+    mockListApps.mockResolvedValueOnce([app1, app2, makeApp("C", "unsealed")]);
     mockSelectApps.mockResolvedValueOnce([app1, app2]);
     mockCheckSudo.mockResolvedValueOnce(true);
     mockUnsealApps.mockResolvedValueOnce([
@@ -264,9 +247,7 @@ describe("CLI entry point (real run())", () => {
     mockListApps.mockResolvedValueOnce([qApp, uApp]);
     mockSelectApps.mockResolvedValueOnce([qApp]);
     mockCheckSudo.mockResolvedValueOnce(true);
-    mockUnsealApps.mockResolvedValueOnce([
-      { app: qApp, success: true },
-    ]);
+    mockUnsealApps.mockResolvedValueOnce([{ app: qApp, success: true }]);
 
     const code = await run({ isTTY: true });
 

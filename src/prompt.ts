@@ -16,7 +16,7 @@ import type { AppInfo } from "./types.js";
 export async function selectApps(
   quarantined: AppInfo[],
   unsealed: AppInfo[],
-  unknown: AppInfo[]
+  unknown: AppInfo[],
 ): Promise<AppInfo[]> {
   if (unsealed.length > 0) {
     console.log(chalk.dim("\n  Already unsealed:"));
@@ -28,17 +28,12 @@ export async function selectApps(
   if (unknown.length > 0) {
     console.log(chalk.dim("\n  ⚠ Could not read status:"));
     for (const app of unknown) {
-      console.log(
-        chalk.red(`  ? ${app.name}`) +
-          chalk.dim(` — ${app.error ?? "unknown error"}`)
-      );
+      console.log(chalk.red(`  ? ${app.name}`) + chalk.dim(` — ${app.error ?? "unknown error"}`));
     }
   }
 
   console.log();
-  console.log(
-    chalk.red.bold("  ⚠ Only unseal apps from trusted sources.")
-  );
+  console.log(chalk.red.bold("  ⚠ Only unseal apps from trusted sources."));
   console.log();
 
   return checkbox<AppInfo>({

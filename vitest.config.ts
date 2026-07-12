@@ -5,10 +5,7 @@ export default defineConfig({
   test: {
     globals: false,
     include: ["tests/**/*.test.ts"],
-    exclude: [
-      "**/node_modules/**",
-      "**/dist/**",
-    ],
+    exclude: ["**/node_modules/**", "**/dist/**"],
     coverage: {
       provider: "v8",
       // Vitest v4 has AST-aware remapping enabled by default; the
