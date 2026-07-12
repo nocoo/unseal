@@ -14,16 +14,15 @@ export function createExecutor(): Executor {
       execFile(cmd, args, { encoding: "utf-8" }, (error, stdout, stderr) => {
         if (error) {
           resolve({
-            /* v8 ignore next 3 -- execFile callback always provides string buffers
-               in utf-8 encoding; the ?? fallbacks defend against an undocumented
-               null/undefined and against missing error.code on signal exits. */
+            // execFile's callback can pass null buffers on signal exits or
+            // early errors; error.code is missing when the process is killed
+            // by signal rather than exiting with a status.
             stdout: stdout ?? "",
             stderr: stderr ?? error.message,
             exitCode: error.code !== undefined ? Number(error.code) : 1,
           });
           return;
         }
-        /* v8 ignore next -- same as above: stdout/stderr are always strings on success. */
         resolve({ stdout: stdout ?? "", stderr: stderr ?? "", exitCode: 0 });
       });
     });

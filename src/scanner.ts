@@ -41,15 +41,12 @@ export async function listApps(
 ): Promise<AppInfo[]> {
   // Back-compat overloads: earlier callers pass entries/onProgress
   // positionally. New callers should pass options only.
-  const opts: ScanOptions = {
-    concurrency: options.concurrency ?? DEFAULT_CONCURRENCY,
-    entries: options.entries ?? entries,
-    onProgress: options.onProgress ?? onProgress,
-  };
+  const concurrency = Math.max(1, options.concurrency ?? DEFAULT_CONCURRENCY);
+  const providedEntries = options.entries ?? entries;
+  const progress = options.onProgress ?? onProgress;
 
-  const dirEntries = opts.entries ?? (await readdir(dir));
+  const dirEntries = providedEntries ?? (await readdir(dir));
   const appNames = dirEntries.filter((name) => name.endsWith(".app"));
-  const concurrency = Math.max(1, opts.concurrency ?? DEFAULT_CONCURRENCY);
 
   // Fixed-size result array indexed by input position so we can preserve
   // dispatch order semantics for callers who inspect it before the sort.
@@ -69,10 +66,7 @@ export async function listApps(
       const i = takeNext();
       if (i === -1) return;
       const name = appNames[i];
-      /* v8 ignore next -- unreachable: takeNext() only returns valid indexes into appNames;
-         this guard exists only to satisfy no-non-null-assertion under strict mode. */
-      if (name === undefined) return;
-      opts.onProgress?.(name);
+      progress?.(name);
       results[i] = await scanOne(exec, dir, name);
     }
   }
