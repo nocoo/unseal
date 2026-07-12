@@ -1,9 +1,13 @@
+import type { checkbox } from "@inquirer/prompts";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { AppInfo } from "../src/types.js";
 
+type CheckboxConfig = Parameters<typeof checkbox<AppInfo>>[0];
+type CheckboxChoice = Extract<CheckboxConfig["choices"][number], { value: AppInfo }>;
+
 // Mock @inquirer/prompts before importing prompt module
 const { mockCheckbox } = vi.hoisted(() => ({
-  mockCheckbox: vi.fn<(config: any) => Promise<any[]>>(),
+  mockCheckbox: vi.fn<(config: unknown) => Promise<AppInfo[]>>(),
 }));
 
 vi.mock("@inquirer/prompts", () => ({
@@ -19,6 +23,12 @@ function makeApp(
   error?: string,
 ): AppInfo {
   return { name: `${name}.app`, path: `/Applications/${name}.app`, status, error };
+}
+
+function lastCheckboxConfig(): CheckboxConfig {
+  const call = mockCheckbox.mock.calls.at(-1);
+  if (!call) throw new Error("checkbox was not called");
+  return call[0] as CheckboxConfig;
 }
 
 describe("prompt", () => {
@@ -53,12 +63,13 @@ describe("prompt", () => {
 
       await selectApps([q1, q2], [], []);
 
-      const config = mockCheckbox.mock.calls[0][0];
-      expect(config.choices).toHaveLength(2);
-      expect(config.choices[0].value).toEqual(q1);
-      expect(config.choices[1].value).toEqual(q2);
-      expect(config.choices[0].checked).toBe(true);
-      expect(config.choices[1].checked).toBe(true);
+      const config = lastCheckboxConfig();
+      const choices = config.choices as CheckboxChoice[];
+      expect(choices).toHaveLength(2);
+      expect(choices[0]?.value).toEqual(q1);
+      expect(choices[1]?.value).toEqual(q2);
+      expect(choices[0]?.checked).toBe(true);
+      expect(choices[1]?.checked).toBe(true);
     });
 
     it("customises the checkbox theme icons to widen the cursor↔circle gap", async () => {
@@ -66,14 +77,12 @@ describe("prompt", () => {
 
       await selectApps([makeApp("A", "quarantined")], [], []);
 
-      const config = mockCheckbox.mock.calls[0][0];
+      const icon = lastCheckboxConfig().theme?.icon;
       // Both icons carry a leading space to visually separate them from the cursor.
-      expect(config.theme.icon.checked.endsWith("◉")).toBe(true);
-      expect(
-        config.theme.icon.checked.startsWith(" ") || /\s◉$/.test(config.theme.icon.checked),
-      ).toBe(true);
-      expect(config.theme.icon.unchecked).toMatch(/^\s+◯$/);
-      expect(config.theme.icon.cursor).toBe("❯");
+      expect(icon?.checked?.endsWith("◉")).toBe(true);
+      expect(icon?.checked?.startsWith(" ") || /\s◉$/.test(icon?.checked ?? "")).toBe(true);
+      expect(icon?.unchecked).toMatch(/^\s+◯$/);
+      expect(icon?.cursor).toBe("❯");
     });
 
     it("handles unknown status apps in display", async () => {
