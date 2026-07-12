@@ -4,6 +4,13 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import type { ExecResult, Executor } from "../src/exec.js";
 import { listApps } from "../src/scanner.js";
+import type { AppInfo } from "../src/types.js";
+
+function findByName(apps: AppInfo[], name: string): AppInfo {
+  const found = apps.find((a) => a.name === name);
+  if (!found) throw new Error(`app ${name} not in result`);
+  return found;
+}
 
 /**
  * Build a mock executor that dispatches on `cmd:path` composite key first,
@@ -139,8 +146,8 @@ describe("scanner", () => {
 
       const result = await listApps(exec, "/apps", ["Good.app", "Broken.app"]);
 
-      const good = result.find((a) => a.name === "Good.app")!;
-      const broken = result.find((a) => a.name === "Broken.app")!;
+      const good = findByName(result, "Good.app");
+      const broken = findByName(result, "Broken.app");
 
       expect(good.status).toBe("unsealed");
       expect(broken.status).toBe("unknown");
@@ -559,7 +566,7 @@ describe("scanner", () => {
       const result = await listApps(exec, "/apps", ["OK1.app", "Boom.app", "OK2.app", "OK3.app"]);
 
       expect(result).toHaveLength(4);
-      const boom = result.find((a) => a.name === "Boom.app")!;
+      const boom = findByName(result, "Boom.app");
       expect(boom.status).toBe("unknown");
       expect(boom.error).toBe("kaboom");
       // The other three succeeded — the pool didn't jam on the failure.

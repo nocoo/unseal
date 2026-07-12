@@ -20,10 +20,10 @@
     "rules": {
       "preset": "recommended",
       "style": {
-        "noNonNullAssertion": "warn"
+        "noNonNullAssertion": "error"
       },
       "suspicious": {
-        "noExplicitAny": "warn"
+        "noExplicitAny": "error"
       }
     }
   },
@@ -42,21 +42,5 @@
         "organizeImports": "on"
       }
     }
-  },
-  "overrides": [
-    {
-      "includes": ["tests/**/*.ts"],
-      "linter": {
-        "rules": {
-          "style": {
-            "noNonNullAssertion": "off"
-          },
-          "suspicious": {
-            "noExplicitAny": "off",
-            "noEmptyBlockStatements": "off"
-          }
-        }
-      }
-    }
-  ]
+  }
 }
