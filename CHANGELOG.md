@@ -1,5 +1,36 @@
 # Changelog
 
+## 0.3.0 — 2026-07-13
+
+### Fixed
+
+- **`exec.exitCode` could be `NaN` on spawn failure** — `child_process.execFile` reports `ENOENT`/`EACCES`/etc as a *string* on `error.code`, and the previous `Number(code)` path produced `NaN`, violating the `ExecResult.exitCode: number` (finite integer) contract. Added `decodeExitCode()` that keeps numeric codes intact, parses numeric strings (`"3"` → 3), and collapses errno names + unknowns to 1. `stderr` also falls back to `error.message` when empty, not just when null — spawn failures produce empty-string stderr.
+
+### Changed
+
+- **Replaced ESLint stack with Biome** — `@biomejs/biome@2.5.3` handles lint, formatting, and import organisation; `eslint`, `@eslint/js`, `typescript-eslint`, and `jiti` removed. `bun run lint` / `lint:fix` / `format` all route through Biome. `noNonNullAssertion` + `noExplicitAny` promoted to `error` with no test-suite overrides.
+- **TypeScript 6.0.3 → 7.0.2** — major bump, no source changes required.
+- **Strict TS flags added** — `noImplicitOverride`, `noImplicitReturns`, `noFallthroughCasesInSwitch`, `noPropertyAccessFromIndexSignature`.
+- **Tests now gated by typecheck** — new `tsconfig.test.json` extends the main config and adds `tests/` + `vitest.config.ts`; `bun run typecheck` now runs both projects in sequence, so pre-commit / CI catch type drift in test code too.
+- **Coverage threshold 95% → 98%** — aligned with `docs/02-testing.md`. Actual coverage is 100% on all metrics.
+- **Simplified `scanner.ts` option handling** — removed dead `?? DEFAULT_CONCURRENCY` recomputation and the unreachable `name === undefined` guard that only existed to satisfy the old `no-non-null-assertion` rule.
+
+### Removed
+
+- **Dead `bunfig.toml`** — `[test.coverageThreshold]` / `coverageSkipTestFiles` only apply to `bun test`; the project runs `vitest`, so the file had no effect.
+
+### Docs
+
+- Purged `UNSEAL_MOCK` / `mock-executor.ts` / `child_process.exec` references left over from v0.1.x — README project tree, `docs/01-architecture.md` structure + Testability seam, and `docs/02-testing.md` Atomic Commits Plan now reflect the actual `execFile` wrapper + `run()` overrides model.
+- Synced the confirmation-flow narrative to today's checkbox-only implementation: no pre-scan confirmation, no `confirmUnseal()` second dialog, quarantined apps default to **checked**, Enter is the confirmation.
+- Made the L2 subprocess-smoke section honest — the scripted-executor case is impossible across process boundaries, so the intended table now covers only what a real subprocess can observe (`--help`, `--version`, non-TTY).
+- Dropped hard-coded test counts from the README (badge → "passing", body text → "全部测试") to eliminate stale-count churn.
+
+### Quality
+
+- **64 tests** across 7 files (+5). New `tests/exec.branches.test.ts` mocks `child_process.execFile` to cover null buffers, string errno names, numeric-string codes, and missing `error.code`.
+- **Coverage: 100% statements / 100% branches / 100% functions / 100% lines** — every `/* v8 ignore */` comment removed except the still-unavoidable bin-entry block in `src/index.ts`.
+
 ## 0.2.0 — 2026-07-02
 
 ### Added
