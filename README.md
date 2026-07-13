@@ -46,8 +46,8 @@ npm install -g unseal
 ```
 src/
 ├── index.ts          # CLI 入口，流程编排
-├── exec.ts           # 命令执行器抽象
-├── mock-executor.ts  # 模拟响应（UNSEAL_MOCK=1）
+├── debug.ts          # 开发用场景演示（不打入 dist）
+├── exec.ts           # 命令执行器抽象（child_process.execFile 封装）
 ├── scanner.ts        # 应用发现 + 隔离检测
 ├── prompt.ts         # TUI 多选 + 确认交互
 ├── unseal.ts         # 移除隔离属性
@@ -58,7 +58,9 @@ tests/
 ├── prompt.test.ts    # 交互提示测试
 ├── unseal.test.ts    # 解封逻辑测试
 ├── sudo.test.ts      # sudo 检测测试
-└── index.test.ts     # CLI 集成测试
+├── index.test.ts     # CLI 集成测试
+├── exec.test.ts      # exec 子进程往返测试
+└── exec.branches.test.ts # exec 兜底分支测试（mock 版）
 ```
 
 ## 技术栈

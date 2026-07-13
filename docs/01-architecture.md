@@ -14,25 +14,28 @@ NPM package name: `unseal` (matches folder name).
 unseal/
 ├── src/
 │   ├── index.ts          # CLI entry point (bin)
-│   ├── exec.ts            # Command executor abstraction (prod + mock seam)
-│   ├── mock-executor.ts   # Canned responses for UNSEAL_MOCK=1 mode
-│   ├── scanner.ts         # Scan /Applications, detect quarantine status
-│   ├── unseal.ts          # Remove quarantine attribute (xattr -rd)
-│   ├── prompt.ts          # TUI multi-select prompt + confirmation
-│   ├── sudo.ts            # sudo privilege check
-│   └── types.ts           # Shared types
+│   ├── debug.ts          # Dev-only scenario harness (tree-shaken from dist/)
+│   ├── exec.ts           # Command executor abstraction (execFile wrapper)
+│   ├── scanner.ts        # Scan /Applications, detect quarantine status
+│   ├── unseal.ts         # Remove quarantine attribute (xattr -rd)
+│   ├── prompt.ts         # TUI multi-select prompt + confirmation
+│   ├── sudo.ts           # sudo privilege check
+│   └── types.ts          # Shared types
 ├── tests/
 │   ├── scanner.test.ts
 │   ├── unseal.test.ts
 │   ├── prompt.test.ts
 │   ├── sudo.test.ts
-│   └── index.test.ts
+│   ├── index.test.ts
+│   ├── exec.test.ts
+│   └── exec.branches.test.ts
 ├── docs/
 │   ├── README.md          # Docs index
 │   ├── 01-architecture.md # This file
 │   └── 02-testing.md      # Testing strategy
 ├── package.json
 ├── tsconfig.json
+├── tsconfig.test.json
 └── README.md
 ```
 
@@ -157,22 +160,29 @@ When stdin is not a TTY (piped / closed), skip interactive prompts and exit 0 wi
 
 **Testability seam:**
 
-All system command execution goes through an injectable `exec` function. In production, this calls `Bun.spawn` / `child_process.exec`. When `UNSEAL_MOCK=1` is set, the CLI loads a mock executor from `src/mock-executor.ts` that returns canned responses. This seam is a first-class part of the architecture, not a test-only hack:
+All system command execution goes through an injectable `Executor` function. Production wraps `child_process.execFile` (see [§ 2 exec.ts](#2-srcexects--command-executor-abstraction) below). Tests and the dev-only debug harness (`src/debug.ts`, run via `bun run debug [scenario]`) supply their own `Executor` — and, where scenario coverage matters more than executor behaviour, their own `scanApps` — through `run(options)`:
 
 ```ts
 // src/exec.ts — command executor abstraction
-export type ExecResult = { stdout: string; stderr: string; exitCode: number }
+export interface ExecResult { stdout: string; stderr: string; exitCode: number }
 export type Executor = (cmd: string, args: string[]) => Promise<ExecResult>
 
 export function createExecutor(): Executor {
-  if (process.env.UNSEAL_MOCK === "1") {
-    return createMockExecutor()
-  }
-  return createRealExecutor()
+  // Wraps child_process.execFile; see src/exec.ts for the ENOENT / null-buffer
+  // normalisation rules that guarantee exitCode is a finite integer.
 }
 ```
 
-This is used by `scanner.ts`, `unseal.ts`, and `sudo.ts` via dependency injection.
+```ts
+// src/index.ts — run() accepts overrides for both seams
+export interface RunOptions {
+  exec?: Executor;
+  scanApps?: (exec: Executor, onProgress: (name: string) => void) => Promise<AppInfo[]>;
+  // …args, isTTY
+}
+```
+
+`scanner.ts`, `unseal.ts`, and `sudo.ts` all receive their `Executor` via dependency injection from `run()`.
 
 **Main flow:**
 
