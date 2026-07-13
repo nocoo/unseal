@@ -14,9 +14,11 @@ export type Executor = (cmd: string, args: string[]) => Promise<ExecResult>;
  * - `string` errno name when the process fails to spawn (`ENOENT`, `EACCES`, …)
  * - `undefined` on signal termination or otherwise-anomalous errors
  *
- * We collapse spawn failures and unknowns to 1 so callers always see a real
- * integer — `Number("ENOENT")` returned `NaN`, which broke every branch that
- * compared `exitCode !== 0`.
+ * We collapse spawn failures and unknowns to 1 so callers always see a
+ * finite integer. `Number("ENOENT")` is NaN, which still satisfies
+ * `exitCode !== 0` but violates the `ExecResult.exitCode: number` contract
+ * — downstream arithmetic, JSON round-trips (NaN → null), and truthy
+ * assertions all behaved unpredictably.
  */
 function decodeExitCode(code: unknown): number {
   if (typeof code === "number") return code;
