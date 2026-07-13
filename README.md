@@ -6,7 +6,7 @@
   <img src="https://img.shields.io/badge/platform-macOS-blue" alt="platform">
   <img src="https://img.shields.io/badge/language-TypeScript-3178C6" alt="language">
   <img src="https://img.shields.io/badge/runtime-Bun-f472b6" alt="runtime">
-  <img src="https://img.shields.io/badge/tests-59%20passed-brightgreen" alt="tests">
+  <img src="https://img.shields.io/badge/tests-64%20passed-brightgreen" alt="tests">
   <img src="https://img.shields.io/badge/license-MIT-green" alt="license">
 </p>
 
@@ -88,19 +88,19 @@ bun run build        # 构建 npm 发布包
 | `bun run lint` | 使用 Biome 检查 lint、格式和 import 顺序（warning 也会失败） |
 | `bun run lint:fix` | 使用 Biome 自动修复可安全修复的问题 |
 | `bun run format` | 使用 Biome 格式化支持的文件 |
-| `bun run typecheck` | TypeScript 严格类型检查 |
+| `bun run typecheck` | TypeScript 严格类型检查（src + tests 双 project） |
 
 ## 测试
 
 | 层 | 内容 | 触发时机 |
 |----|------|----------|
-| L1 | 单元测试（59 cases，100%） | pre-commit |
+| L1 | 单元测试（64 cases，100%） | pre-commit |
 | G1 | Biome（0 error / 0 warning）+ `tsc --noEmit`（strict） | pre-commit、CI |
 | L2 | 集成 + 冒烟测试 | pre-push |
 | G2 | gitleaks + osv-scanner | pre-push |
 
 ```bash
-bun run test          # 运行全部 59 个测试
+bun run test          # 运行全部 64 个测试
 bun run typecheck     # 类型检查
 ```
 

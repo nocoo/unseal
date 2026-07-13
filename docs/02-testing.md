@@ -19,17 +19,19 @@ Effective Tier A checklist: L1 ✅ + L2 ✅ + G1 ✅ + D1 N/A(=✅) → **Tier A
 
 ### Coverage: ≥ 98%
 
-| Test file            | Module under test | Key scenarios                                                   |
-|---------------------|-------------------|-----------------------------------------------------------------|
-| `scanner.test.ts`   | `scanner.ts`      | Apps with quarantine attr, apps without, mixed list, empty dir, `.app` filter, sort order, xattr failure → unknown |
-| `unseal.test.ts`    | `unseal.ts`       | Successful removal, permission denied, partial failure, empty input |
-| `sudo.test.ts`      | `sudo.ts`         | Passwordless sudo available, sudo -v fallback, both fail         |
-| `prompt.test.ts`    | `prompt.ts`       | Multi-select rendering, empty selection, confirmation accept/decline, display sections (unsealed/unknown/quarantined) |
-| `index.test.ts`     | `index.ts`        | Full CLI flow with mocked modules, exit codes, edge cases (no quarantined, empty selection, sudo fail) |
+| Test file                   | Module under test | Key scenarios                                                   |
+|-----------------------------|-------------------|-----------------------------------------------------------------|
+| `scanner.test.ts`           | `scanner.ts`      | Apps with quarantine attr, apps without, mixed list, empty dir, `.app` filter, sort order, xattr failure → unknown |
+| `unseal.test.ts`            | `unseal.ts`       | Successful removal, permission denied, partial failure, empty input |
+| `sudo.test.ts`              | `sudo.ts`         | Passwordless sudo available, sudo -v fallback, both fail         |
+| `prompt.test.ts`            | `prompt.ts`       | Multi-select rendering, empty selection, confirmation accept/decline, display sections (unsealed/unknown/quarantined) |
+| `index.test.ts`             | `index.ts`        | Full CLI flow with mocked modules, exit codes, edge cases (no quarantined, empty selection, sudo fail) |
+| `exec.test.ts`              | `exec.ts`         | Real subprocess round-trip: success, non-zero exit, ENOENT-style spawn failure (stderr populated, finite exitCode) |
+| `exec.branches.test.ts`     | `exec.ts`         | Mocked `execFile` callback: null buffers, missing `error.code`, string errno names (ENOENT), numeric-string codes |
 
 ### Mocking Strategy
 
-All modules use `child_process.exec` to run system commands (`xattr`, `sudo`). Tests mock the exec layer:
+All modules use `child_process.execFile` to run system commands (`xattr`, `spctl`, `sudo`). Tests mock the exec layer:
 
 ```ts
 // Mock pattern: inject command executor
