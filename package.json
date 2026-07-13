@@ -18,7 +18,7 @@
     "lint": "biome check --error-on-warnings",
     "lint:fix": "biome check --write --error-on-warnings",
     "format": "biome format --write",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc --project tsconfig.json --noEmit && tsc --project tsconfig.test.json",
     "prepare": "husky"
   },
   "engines": {
