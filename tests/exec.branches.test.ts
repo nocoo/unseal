@@ -54,6 +54,41 @@ describe("exec branches (mocked child_process.execFile)", () => {
     expect(result.stderr).toBe("some err");
   });
 
+  it("normalises string errno codes (e.g. ENOENT on spawn failure) to exitCode 1", async () => {
+    mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
+      cb?.(
+        // Node passes a string errno name (not a number) when the child
+        // process fails to spawn — Number("ENOENT") is NaN, so exec must
+        // collapse it to a real integer.
+        makeExecError("spawn ENOENT", { code: "ENOENT" as unknown as number }),
+        "",
+        "",
+      );
+      return {} as ReturnType<typeof execFileType>;
+    });
+
+    const exec = createExecutor();
+    const result = await exec("missing-binary", []);
+
+    expect(result.exitCode).toBe(1);
+    expect(Number.isFinite(result.exitCode)).toBe(true);
+    // Empty stderr must fall back to error.message so callers see something.
+    expect(result.stderr).toBe("spawn ENOENT");
+  });
+
+  it("parses numeric string exit codes (e.g. shell wrappers emit '3')", async () => {
+    mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
+      cb?.(makeExecError("failed", { code: "3" as unknown as number }), "", "err text");
+      return {} as ReturnType<typeof execFileType>;
+    });
+
+    const exec = createExecutor();
+    const result = await exec("whatever", []);
+
+    expect(result.exitCode).toBe(3);
+    expect(result.stderr).toBe("err text");
+  });
+
   it("falls back to '' on success when execFile passes null buffers", async () => {
     mockExecFile.mockImplementation((_cmd, _args, _opts, cb) => {
       cb?.(null, null as unknown as string, null as unknown as string);

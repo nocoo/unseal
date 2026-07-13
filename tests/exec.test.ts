@@ -25,6 +25,12 @@ describe("exec", () => {
       const result = await exec("definitely-not-a-real-binary-xyz", []);
 
       expect(result.exitCode).not.toBe(0);
+      // ENOENT arrives on error.code as a string; earlier code called
+      // Number("ENOENT") and produced NaN, which failed every downstream
+      // `exitCode !== 0` branch. Assert we now normalise to a valid integer.
+      expect(Number.isFinite(result.exitCode)).toBe(true);
+      // Node's stderr is empty on spawn failure; the message must surface.
+      expect(result.stderr.length).toBeGreaterThan(0);
     });
   });
 });
