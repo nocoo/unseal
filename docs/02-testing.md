@@ -124,18 +124,19 @@ These tests mock the command executor but verify cross-module wiring.
 
 ### Subprocess smoke tests
 
-> Not yet implemented — table below captures the intended coverage for a future L2 pass. Today, the equivalent scenarios are exercised interactively via `bun run debug [scenario]`, which drives `run()` with a scripted `Executor` + `scanApps` override rather than spawning a subprocess.
+> **Status: not yet implemented.** The cases below are limited to what a real subprocess can observe without in-process seams — the `Executor` / `scanApps` overrides on `run()` are function values and cannot be forwarded to `dist/index.js`, so scenarios that need a scripted executor stay on the unit-test side (mocked `run()` in `tests/index.test.ts`) or on the interactive side (`bun run debug [scenario]`).
 
-Spawn the actual CLI binary as a child process to verify the CLI flags, non-interactive handling, and entry-point wiring defined in [01-architecture.md § CLI Entry Point](01-architecture.md#6-srcindexts--cli-entry-point):
+Spawn the built CLI binary as a child process to verify the CLI flags and non-interactive handling defined in [01-architecture.md § CLI Entry Point](01-architecture.md#6-srcindexts--cli-entry-point):
 
 | Case                              | Method                                           | Asserts                                           |
 |-----------------------------------|--------------------------------------------------|---------------------------------------------------|
-| No quarantined apps → exit 0      | Spawn `dist/index.js` with a scripted executor injected via a debug entry | stdout contains "already unsealed", exit code 0  |
-| Non-interactive (piped stdin)     | Spawn with stdin closed (not a TTY)              | stdout contains "Interactive terminal required", exit code 0 |
-| `--help` flag                     | `Bun.spawn(["bun", "dist/index.js", "--help"])` | stdout contains usage text, exit code 0           |
-| `--version` flag                  | `Bun.spawn(["bun", "dist/index.js", "--version"])` | stdout matches package.json version            |
+| Non-interactive (piped stdin)     | `Bun.spawn(["node", "dist/index.js"], { stdin: "pipe" })` and immediately close stdin | stdout contains "Interactive terminal required", exit code 0 |
+| `--help` flag                     | `Bun.spawn(["node", "dist/index.js", "--help"])` | stdout contains usage text, exit code 0           |
+| `--version` flag                  | `Bun.spawn(["node", "dist/index.js", "--version"])` | stdout matches package.json version            |
 
-**Design rationale**: These tests verify behaviour defined in the architecture (CLI flags, TTY detection, executor injection) — not test-only features. The `Executor` / `scanApps` overrides on `run()` are first-class abstractions in `src/index.ts`, shared by both the debug harness and unit tests.
+Cases that need a scripted `Executor` (e.g. "no quarantined apps → exit 0", failure summaries, sudo denial) are covered by `tests/index.test.ts` — which imports `run()` and injects the seams directly — plus manual runs of `bun run debug`. There is no plan to smuggle a debug executor into the shipped bundle to enable subprocess coverage of those paths.
+
+**Design rationale**: The subprocess suite exists to prove the bin wrapper, TTY detection, and flag parsing still work end-to-end after `bun build`. It does not replace unit-level coverage of `run()`'s conditional branches.
 
 ---
 
