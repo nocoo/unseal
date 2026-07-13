@@ -134,14 +134,10 @@ The `spctl` call is only made when the quarantine xattr is present, so non-quara
   - Display three sections:
     1. **Upper section** (info only): Already unsealed apps — shown in green ✓, not selectable
     2. **Middle section** (warning): Unknown status apps — shown in red ?, not selectable, with error detail
-    3. **Lower section** (checkbox): Quarantined apps — shown in yellow, all unchecked by default
-  - Returns user-selected `AppInfo[]`
+    3. **Lower section** (checkbox): Quarantined apps — shown in yellow, **all checked by default** (opt-out via space; Enter confirms and immediately triggers the sudo prompt)
+  - Returns user-selected `AppInfo[]` (empty array = user unchecked everything = cancel)
 
-- `confirmUnseal(selected: AppInfo[]): Promise<boolean>`
-  - Shows warning text in red: "Do not unseal apps you don't recognize. Only unseal apps from trusted sources."
-  - Lists selected apps in yellow
-  - Asks for explicit Y/N confirmation
-  - Returns `true` if confirmed
+Pressing Enter on the checkbox is itself the confirmation — there is no separate `confirmUnseal()` step. Ctrl+C / Esc throw `ExitPromptError`, which `run()` catches to print a "Cancelled" message and exit 0.
 
 ### 6. `src/index.ts` — CLI Entry Point
 
@@ -204,17 +200,13 @@ export interface RunOptions {
    → exit 0
 
 5. prompt.selectApps(quarantined, unsealed, unknown)
-   → user multi-selects from quarantined apps
-   → if selection empty → exit 0
+   → user multi-selects from quarantined apps (defaults to all checked)
+   → Enter = confirm and proceed; empty selection or Ctrl+C = exit 0
 
-6. prompt.confirmUnseal(selected)
-   → show warning + selected app list
-   → if declined → exit 0
-
-7. sudo.checkSudo(exec)
+6. sudo.checkSudo(exec)
    → if fails → print error + exit 1
 
-8. unseal.unsealApps(selected, exec)
+7. unseal.unsealApps(selected, exec)
    → print results: green ✓ for success, red ✗ for failure
 ```
 
@@ -280,29 +272,26 @@ export interface RunOptions {
     ? CorruptedApp.app — permission denied
     ? WeirdApp.app — xattr timed out
 
-  Quarantined (select to unseal):
-  ○ SomeApp.app
-  ○ AnotherApp.app
-  ○ SketchyApp.app
+  Quarantined (space to toggle, enter to unseal):
+  ◉ SomeApp.app
+  ◉ AnotherApp.app
+  ◉ SketchyApp.app
 
-  ↑/↓ navigate  ⎵ toggle  ↵ confirm
+  ↑/↓ navigate  ⎵ toggle  ↵ confirm & unseal
 ```
 
 - Green `✓` for already-unsealed apps (info section, not interactive)
 - Red `?` for unknown-status apps (warning section, not interactive, shows error)
 - Yellow names for quarantined apps (checkbox section)
-- Default: all unchecked
+- Default: all **checked** — the safe path is "review, opt out of anything unfamiliar, hit Enter"
 
 ---
 
 ## Permission & Safety
 
-1. **Double confirmation** (before any privilege escalation):
-   - First: user selects apps via checkbox (explicit opt-in)
-   - Second: confirm dialog with warning:
-     > ⚠️ Warning: Do not unseal apps you don't recognize. Only unseal apps from trusted sources.
-     > Are you sure you want to unseal the following N app(s)?
-   - Selected apps shown in yellow before final confirmation
+1. **Explicit opt-in via checkbox**: quarantined apps start checked but the user must press Enter to commit. Space toggles individual items; unchecking everything or hitting Ctrl+C cancels without touching sudo.
+   > ⚠ Only unseal apps from trusted sources.
+   (warning printed above the checkbox, in red)
 2. **Post-confirm sudo check**: `sudo -n true` → if fails, `sudo -v` to prompt password
    - sudo ticket is only opened after the user has fully committed to the operation
 3. **Unknown status apps**: displayed as red `?` with error detail, never silently hidden

@@ -83,10 +83,10 @@ const mockExec = vi.fn(() => Promise.resolve({
 
 | Case                          | Input (mock)                      | Expected                         |
 |-------------------------------|-----------------------------------|----------------------------------|
-| User selects some apps        | Mock checkbox returns 2 apps      | Returns 2 apps                   |
-| User selects nothing          | Mock checkbox returns empty       | Returns empty                    |
-| User confirms                 | Mock confirm returns true         | `true`                           |
-| User declines                 | Mock confirm returns false        | `false`                          |
+| User confirms with all defaults | Mock checkbox returns all 2 apps | Returns 2 apps                   |
+| User unchecks everything      | Mock checkbox returns empty       | Returns empty (upstream treats as cancel) |
+| Checkbox rendered with sane defaults | selectApps called with 2 quarantined apps | Choices carry `checked: true`; theme icons customised |
+| Unknown-status apps shown as warning row | selectApps called with unknown-status app | Warning section printed above checkbox |
 
 #### index.test.ts
 
