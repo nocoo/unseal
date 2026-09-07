@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/brand/icon-rounded.png" alt="Unseal logo" width="180" height="180" />
+</p>
+
 <h1 align="center">unseal</h1>
 
 <p align="center"><strong>扫描 macOS 隔离区应用，一键批量解除封印</strong><br>检测隔离 · 交互选择 · 批量解封</p>
@@ -115,3 +119,5 @@ bun run typecheck     # 类型检查
 ## License
 
 [MIT](LICENSE) © 2026
+
+Logo assets and usage: [guide](docs/03-logo-usage.md) · [identity study](https://hexly.ai/logos/unseal).
