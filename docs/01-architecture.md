@@ -32,7 +32,8 @@ unseal/
 ├── docs/
 │   ├── README.md          # Docs index
 │   ├── 01-architecture.md # This file
-│   └── 02-testing.md      # Testing strategy
+│   ├── 02-testing.md      # Testing strategy
+│   └── 03-logo-usage.md   # Logo / brand usage guide
 ├── package.json
 ├── tsconfig.json
 ├── tsconfig.test.json
@@ -74,10 +75,13 @@ export interface UnsealResult {
 
 **Exports:**
 
-- `listApps(exec: Executor, dir?: string): Promise<AppInfo[]>`
+- `listApps(exec: Executor, dir?: string, entries?: string[], onProgress?: (appName: string) => void, options?: { concurrency?: number; entries?: string[]; onProgress?: (appName: string) => void }): Promise<AppInfo[]>`
   - Default dir: `/Applications`
   - Lists all `*.app` bundles (top-level only, no recursion)
   - For each app, runs `xattr -l <path>` and checks for `com.apple.quarantine`
+  - Scans via a bounded worker pool (`options.concurrency`, default **3**)
+  - `onProgress` fires when a worker starts each app (dispatch order under concurrency > 1)
+  - Trailing `options` is an internal (unexported) bag: `concurrency?`, `entries?`, `onProgress?`. Positional `entries` / `onProgress` remain for back-compat and merge with options (options win when both are set). Callers pass options as the 5th argument after positional args or `undefined` placeholders — not as a second-arg options-only form
   - Returns `AppInfo[]` sorted alphabetically by name
 
 **Detection logic:**
