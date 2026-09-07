@@ -1,34 +1,34 @@
 {
-	"project": "unseal",
-	"series": "material",
-	"study": "2026-09-07-01",
-	"finishing": "01",
-	"archive": "https://github.com/nocoo/hexly.ai/tree/main/artwork/logo-family/unseal/2026-09-07-01",
-	"review": "https://hexly.ai/logos/unseal",
-	"masters": {
-		"logo.png": {
-			"sha256": "8868c38b03154d60f932fd26a67c198d4986476bbd81c4497bcc6f4c9e484c2b",
-			"source": "artwork/logo-family/unseal/2026-09-07-01/finishing/01/exports/unseal-transparent-2048.png",
-			"width": 2048,
-			"height": 2048
-		},
-		"assets/brand/icon.png": {
-			"sha256": "732160d54958294a1b7a60160c3688f5ef8a9f74584b8240641d373b95d91795",
-			"source": "artwork/logo-family/unseal/2026-09-07-01/finishing/01/exports/unseal-icon-2048.png",
-			"width": 2048,
-			"height": 2048
-		},
-		"assets/brand/icon-rounded.png": {
-			"sha256": "27b3e2d1a47beb21928e81fac742fb29e04b4b6b07afb93beacd5dbcbc402e94",
-			"source": "artwork/logo-family/unseal/2026-09-07-01/finishing/01/exports/unseal-rounded-2048.png",
-			"width": 2048,
-			"height": 2048
-		},
-		"assets/brand/background.png": {
-			"sha256": "356e80b5dd9932101db5b7f819715609ed19dfb92139e38a8c5cd091af948353",
-			"source": "artwork/logo-family/unseal/2026-09-07-01/finishing/01/background.png",
-			"width": 2048,
-			"height": 2048
-		}
-	}
+  "project": "unseal",
+  "series": "material",
+  "study": "2026-09-07-01",
+  "finishing": "01",
+  "archive": "https://github.com/nocoo/hexly.ai/tree/main/artwork/logo-family/unseal/2026-09-07-01",
+  "review": "https://hexly.ai/logos/unseal",
+  "masters": {
+    "logo.png": {
+      "sha256": "8868c38b03154d60f932fd26a67c198d4986476bbd81c4497bcc6f4c9e484c2b",
+      "source": "artwork/logo-family/unseal/2026-09-07-01/finishing/01/exports/unseal-transparent-2048.png",
+      "width": 2048,
+      "height": 2048
+    },
+    "assets/brand/icon.png": {
+      "sha256": "732160d54958294a1b7a60160c3688f5ef8a9f74584b8240641d373b95d91795",
+      "source": "artwork/logo-family/unseal/2026-09-07-01/finishing/01/exports/unseal-icon-2048.png",
+      "width": 2048,
+      "height": 2048
+    },
+    "assets/brand/icon-rounded.png": {
+      "sha256": "27b3e2d1a47beb21928e81fac742fb29e04b4b6b07afb93beacd5dbcbc402e94",
+      "source": "artwork/logo-family/unseal/2026-09-07-01/finishing/01/exports/unseal-rounded-2048.png",
+      "width": 2048,
+      "height": 2048
+    },
+    "assets/brand/background.png": {
+      "sha256": "356e80b5dd9932101db5b7f819715609ed19dfb92139e38a8c5cd091af948353",
+      "source": "artwork/logo-family/unseal/2026-09-07-01/finishing/01/background.png",
+      "width": 2048,
+      "height": 2048
+    }
+  }
 }
