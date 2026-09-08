@@ -1,123 +1,100 @@
 <p align="center">
-  <img src="assets/brand/icon-rounded.png" alt="Unseal logo" width="180" height="180" />
+  <img src="assets/brand/icon-rounded.png" width="128" alt="Unseal logo" />
 </p>
-
 <h1 align="center">unseal</h1>
-
-<p align="center"><strong>扫描 macOS 隔离区应用，一键批量解除封印</strong><br>检测隔离 · 交互选择 · 批量解封</p>
-
+<p align="center">检查 macOS 应用的隔离状态，交互选择后批量移除隔离属性。</p>
 <p align="center">
-  <img src="https://img.shields.io/badge/platform-macOS-blue" alt="platform">
-  <img src="https://img.shields.io/badge/language-TypeScript-3178C6" alt="language">
-  <img src="https://img.shields.io/badge/runtime-Bun-f472b6" alt="runtime">
-  <img src="https://img.shields.io/badge/tests-passing-brightgreen" alt="tests">
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="license">
+  <a href="https://www.npmjs.com/package/unseal">npm</a> ·
+  <a href="docs/README.en.md">English</a>
 </p>
-
----
 
 ## 这是什么
 
-macOS Gatekeeper 通过 `com.apple.quarantine` 扩展属性标记从互联网下载的应用。`unseal` 扫描 `/Applications` 目录，检测每个 app 的隔离状态，并提供交互式界面批量移除隔离属性。
+Unseal 是一个 macOS 命令行工具，用来处理已确认来源可信、但仍带有 `com.apple.quarantine` 属性的应用。它扫描 `/Applications`，结合 `xattr` 和 `spctl` 的结果列出候选应用，供你选择后统一操作。
 
-对于已签名但仍保留隔离属性的应用，`unseal` 会额外调用 `spctl` 进行 Gatekeeper 评估，区分"真正被隔离"和"虽有属性但已被系统信任"两种情况，避免误报。
+扫描只覆盖 `/Applications` 第一层的 `.app` 条目。移除隔离属性后，应用仍可能因签名、文件损坏或其他系统策略无法打开；检测结果也不构成对应用安全性的判断。
 
 ## 功能
 
-- **三态检测** — 区分隔离（quarantined）、已解封（unsealed）和不可读（unknown）三种状态
-- **Gatekeeper 二次验证** — 对有隔离属性的应用额外调用 `spctl --assess`，已签名应用不会被误报
-- **扫描进度回显** — 扫描过程中实时显示当前正在检测的应用名
-- **交互式多选** — checkbox UI 选择需要解封的应用（默认全部选中，回车即确认解封）
-- **延迟提权** — 仅在用户回车确认后才请求 sudo 权限
+| 操作 | 当前行为 |
+| --- | --- |
+| 检查状态 | 先读取扩展属性；存在隔离属性时，再运行 `spctl --assess --type execute`。 |
+| 区分候选与未知 | 有隔离属性且系统评估返回非零时列为候选；属性读取失败显示为 unknown，不提供勾选。 |
+| 交互多选 | 显示扫描进度与按名称排序的列表，候选应用默认全部选中。 |
+| 延后检查权限 | 完成选择后才检查 sudo 权限，需要时由 sudo 进行身份验证。 |
+| 批量处理 | 逐个递归移除所选应用及其内容的隔离属性；某项失败后继续处理后续项目，并打印结果。 |
 
-## 安装
+界面中的 `unsealed` 表示没有隔离属性，或系统评估返回成功；后一种情况下属性可能仍然存在。
+
+## 使用
+
+需要 macOS、交互式终端和 Node.js 24 LTS。包也接受 `package.json` 中列出的其他 Node.js 版本。执行修改时需要 sudo 权限。
 
 ```bash
 npm install -g unseal
+unseal
 ```
 
-## 命令一览
+1. 等待扫描完成，检查应用列表与无法读取的项目。
+2. 用方向键移动、空格切换勾选。候选项默认全选，请保留你确实要处理的应用。
+3. 按回车即确认执行，随后进入权限检查和属性移除，没有第二次确认。Ctrl+C 或取消所有勾选可退出。
+4. 阅读每个应用的成功或失败结果。
 
-| 命令 | 说明 |
-|------|------|
-| `unseal` | 交互式扫描 + 解封流程 |
-| `unseal --help` | 显示帮助信息 |
-| `unseal --version` | 显示版本号 |
+实际修改命令为 `sudo xattr -rd com.apple.quarantine <app>`。当前批量操作出现个别失败时仍可能返回退出码 0，应以逐应用结果为准。非交互环境只显示提示后退出。
 
-## 项目结构
-
+```bash
+unseal --help
+unseal --version
 ```
-src/
-├── index.ts          # CLI 入口，流程编排
-├── debug.ts          # 开发用场景演示（不打入 dist）
-├── exec.ts           # 命令执行器抽象（child_process.execFile 封装）
-├── scanner.ts        # 应用发现 + 隔离检测
-├── prompt.ts         # TUI 多选 + 确认交互
-├── unseal.ts         # 移除隔离属性
-├── sudo.ts           # 权限检查
-└── types.ts          # 共享类型定义
-tests/
-├── scanner.test.ts   # 扫描器单元测试
-├── prompt.test.ts    # 交互提示测试
-├── unseal.test.ts    # 解封逻辑测试
-├── sudo.test.ts      # sudo 检测测试
-├── index.test.ts     # CLI 集成测试
-├── exec.test.ts      # exec 子进程往返测试
-└── exec.branches.test.ts # exec 兜底分支测试（mock 版）
-```
-
-## 技术栈
-
-| 层 | 技术 |
-|----|------|
-| 语言 | [TypeScript](https://www.typescriptlang.org/)（strict 模式） |
-| 运行时 | [Bun](https://bun.sh/)（开发、测试、构建） |
-| TUI | [@inquirer/prompts](https://npm.im/@inquirer/prompts)（checkbox + confirm） |
-| 终端着色 | [chalk](https://npm.im/chalk) |
-| 目标平台 | Node.js ^20.19 \|\| ^22.13 \|\| >=24（ESM bundle，`bun build --target=node`） |
 
 ## 开发
 
-**环境要求**：Bun >= 1.0
+开发需要 Bun 和上述 Node.js 环境：
 
 ```bash
-bun install          # 安装依赖
-bun run dev          # 开发模式运行
-bun run build        # 构建 npm 发布包
+git clone https://github.com/nocoo/unseal.git
+cd unseal
+bun install --frozen-lockfile
+bun run build
+node dist/index.js --help
 ```
 
-| 命令 | 说明 |
-|------|------|
-| `bun run test` | 运行全部测试 |
-| `bun run test:coverage` | 运行测试并生成覆盖率报告 |
-| `bun run lint` | 使用 Biome 检查 lint、格式和 import 顺序（warning 也会失败） |
-| `bun run lint:fix` | 使用 Biome 自动修复可安全修复的问题 |
-| `bun run format` | 使用 Biome 格式化支持的文件 |
-| `bun run typecheck` | TypeScript 严格类型检查（src + tests 双 project） |
+`bun run dev` 运行真实扫描与处理流程。调整交互界面时，可使用提供静态应用列表和模拟系统命令的场景：
+
+```bash
+bun run debug --list
+bun run debug mixed
+bun run debug with-failure
+```
+
+核心代码位于 `src/`：`scanner.ts` 检测状态，`prompt.ts` 提供选择界面，`sudo.ts` 检查权限，`unseal.ts` 执行属性移除，`exec.ts` 封装子进程。
 
 ## 测试
 
-| 层 | 内容 | 触发时机 |
-|----|------|----------|
-| L1 | 单元测试（100% 覆盖率） | pre-commit |
-| G1 | Biome（0 error / 0 warning）+ `tsc --noEmit`（strict） | pre-commit、CI |
-| L2 | 集成 + 冒烟测试 | pre-push |
-| G2 | gitleaks + osv-scanner | pre-push |
-
 ```bash
-bun run test          # 运行全部测试
-bun run typecheck     # 类型检查
+bun run test
+bunx vitest run tests/exec.test.ts
 ```
+
+第一条运行全部单元和流程组合测试，扫描、选择与修改使用模拟对象；第二条单独运行真实子进程往返测试。测试不会给本机应用修改属性。`bun run debug` 可在终端中人工检查模拟场景的交互流程。
+
+## 技术栈
+
+| 技术 | 用途 |
+| --- | --- |
+| TypeScript / Node.js | CLI 逻辑与发布包运行环境 |
+| Bun | 依赖管理、开发运行和 ESM 打包 |
+| Inquirer / chalk | 终端多选与着色 |
+| xattr / spctl / sudo | macOS 属性读取、系统评估与权限操作 |
+| Vitest | 模块、流程与子进程测试 |
 
 ## 文档
 
-| # | 文档 | 说明 |
-|---|------|------|
-| 01 | [Architecture](docs/01-architecture.md) | 系统设计 |
-| 02 | [Testing Strategy](docs/02-testing.md) | 测试策略与提交规范 |
+- [文档索引](docs/README.md)
+- [架构与检测流程](docs/01-architecture.md)
+- [Logo 使用说明](docs/03-logo-usage.md)
+- [版本记录](CHANGELOG.md)
 
-## License
+## 许可证
 
-[MIT](LICENSE) © 2026
-
-Logo assets and usage: [guide](docs/03-logo-usage.md) · [identity study](https://hexly.ai/logos/unseal).
+[MIT](LICENSE)
