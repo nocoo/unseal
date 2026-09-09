@@ -10,6 +10,7 @@
  *   bun run debug all-quarantined
  *   bun run debug all-unsealed
  *   bun run debug with-unknown
+ *   bun run debug with-failure
  *   bun run debug empty
  *
  * This file is NOT imported from src/index.ts, so `bun build` (whose entry
