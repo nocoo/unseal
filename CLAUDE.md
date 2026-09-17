@@ -73,10 +73,10 @@ Status: `enforced` | `planned` | `manual` | `N/A`.
 
 | Hook | Verifies | Budget | Runs |
 |---|---|---|---|
-| pre-commit | test:coverage, typecheck, lint | <30s | L1 + G1 |
-| pre-push | `bun run test` + gitleaks + osv-scanner | <3min | G2; L2 label is inaccurate today |
+| pre-commit | working-tree `test:coverage`, typecheck, lint (not index snapshot) | target <30s (unmeasured) | L1 + G1 |
+| pre-push | working-tree `bun run test`; `gitleaks protect --staged`; osv on `bun.lock` (not stdin refs) | target <3min (unmeasured) | G2; L2 label is inaccurate today |
 
-Hooks check-only. `--no-verify` forbidden.
+Target: index-snapshot G1+L1; stdin-ref L2+G2. Check-only; `--no-verify` forbidden.
 
 ## Resources / Isolation
 
