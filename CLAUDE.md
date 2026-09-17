@@ -58,6 +58,7 @@ bun run debug               # interactive scenario harness (manual)
 
 Status: `enforced` | `planned` | `manual` | `N/A`.
 6DQ = L1/L2/L3 + G1/G2 + D1. Preserve the 98% bar; do not lower it to 95%. CLI process E2E is not N/A just because there is no browser.
+L1 requires statements/branches/functions/lines each ≥98%; no skipped or focused tests.
 
 | Change | Proof | Status | Evidence |
 |---|---|---|---|
