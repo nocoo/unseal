@@ -6,6 +6,8 @@ Direction: [docs/01-architecture.md](docs/01-architecture.md). Frameworks must n
 
 ## Sources of Truth
 
+Maintain this root `AGENTS.md` as the only project handbook; do not create legacy aliases, imports or copies.
+
 This file is the **contract**. Hooks, CI, and config are **enforcement**. If they disagree, that is a failure — raise enforcement to match this file; never lower the contract to a weaker hook.
 
 | Fact | Where |
@@ -44,8 +46,10 @@ tests/  docs/
 
 ## Commands
 
+Run from the repository root with Bun (CI pins 1.3.11) and Node 24 LTS, or another version supported by `package.json`. No live credentials are needed for tests.
+
 ```bash
-bun install
+bun install --frozen-lockfile
 bun run typecheck           # tsc project + tsconfig.test.json
 bun run lint                # biome check --error-on-warnings
 bun run build               # bun build src/index.ts --target=node --outdir=dist
@@ -57,7 +61,7 @@ bun run debug               # interactive scenario harness (manual)
 ## Verification
 
 Status: `enforced` | `planned` | `manual` | `N/A`.
-6DQ = L1/L2/L3 + G1/G2 + D1. Preserve the 98% bar; do not lower it to 95%. CLI process E2E is not N/A just because there is no browser.
+6DQ retains its name with unified L1, L2/L3, G2 and D1; former G1 merged into L1 on 2026-09-21. Follow the maintained `system0-6dq-l1` contract. Preserve the 98% bar; do not lower it to 95%. CLI process E2E is not N/A just because there is no browser.
 L1 requires statements/branches/functions/lines each ≥98%; no skipped or focused tests.
 
 | Change | Proof | Status | Evidence |
@@ -65,7 +69,7 @@ L1 requires statements/branches/functions/lines each ≥98%; no skipped or focus
 | Logic | L1 Vitest statements/branches/functions/lines each ≥ **98%** | enforced | `vitest.config.ts`; pre-commit `test:coverage`; CI `bun run test:coverage` |
 | API / schema | L2 packed CLI subprocess (`--help`/`--version`/TTY) | planned | [docs/02-testing.md](docs/02-testing.md) subprocess smoke **not implemented**; pre-push `bun run test` repeats L1 |
 | UI path | L3 process-level E2E of `dist/index.js` | planned | no browser; shipped-binary E2E still required |
-| Types / lint | G1 0 error, 0 warning | enforced | pre-commit typecheck+lint; CI |
+| Complete L1 | 98% coverage plus strict check-only types/lint, zero errors/warnings, no skipped/focused tests and installed index-snapshot rejection | planned | Coverage and static subchecks run in hooks/CI; hooks use working files. Complete snapshot isolation, skip/focus rejection and <30s timing remain unverified |
 | Deps / secrets | G2 osv-scanner + gitleaks; missing binary fails | enforced | pre-push `gitleaks protect --staged` + `osv-scanner --lockfile=bun.lock`; CI quality.yml default security |
 | Test isolation | D1 never touch real `/Applications` | enforced | unit tests inject Executor mocks; no durable DB (`N/A` for SQLite). Do not run `unseal` unmocked in CI |
 | Bundler output | `bun run build` | planned | not in hooks |
@@ -74,10 +78,10 @@ L1 requires statements/branches/functions/lines each ≥98%; no skipped or focus
 
 | Hook | Verifies | Budget | Runs |
 |---|---|---|---|
-| pre-commit | working-tree `test:coverage`, typecheck, lint (not index snapshot) | target <30s (unmeasured) | L1 + G1 |
+| pre-commit | working-tree `test:coverage`, typecheck, lint (not index snapshot) | target <30s (unmeasured) | Unified L1 subchecks |
 | pre-push | working-tree `bun run test`; `gitleaks protect --staged`; osv on `bun.lock` (not stdin refs) | target <3min (unmeasured) | G2; L2 label is inaccurate today |
 
-Target: index-snapshot G1+L1; stdin-ref L2+G2. Check-only; `--no-verify` forbidden.
+Target: index-snapshot unified L1; stdin-ref L2+G2. Check-only; `--no-verify` forbidden.
 
 ## Resources / Isolation
 

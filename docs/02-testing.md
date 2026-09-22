@@ -4,14 +4,7 @@
 
 Target: **98% code coverage** (per project requirement).
 
-Quality tier target: **Tier A** (L1 + L2 + G1).
-
-Per the quality framework, **N/A dimensions count as achieved** for tier calculation:
-
-- **L3 (BDD E2E)**: N/A — CLI tool, no GUI
-- **D1 (Test Isolation)**: N/A — no database or remote storage
-
-Effective Tier A checklist: L1 ✅ + L2 ✅ + G1 ✅ + D1 N/A(=✅) → **Tier A**
+The current contract is in [AGENTS.md](../AGENTS.md). Former G1 is part of unified L1; there is no current whole-6DQ tier certification here. Coverage and static subchecks are configured, while full index-snapshot L1 remains planned. CLI subprocess/system coverage remains applicable and incomplete; D1 applies to process/filesystem isolation even without a database.
 
 ---
 
@@ -101,7 +94,7 @@ const mockExec = vi.fn(() => Promise.resolve({
 
 ---
 
-## G1 — Static Analysis (pre-commit)
+## L1 — Static Analysis (pre-commit)
 
 - **Biome**: `biome check --error-on-warnings` (recommended lint rules, formatting, import organization)
 - **TypeScript**: `tsc --noEmit` (strict: true)
@@ -151,9 +144,9 @@ Cases that need a scripted `Executor` (e.g. "no quarantined apps → exit 0", fa
 
 | Automation   | Runs                                      |
 |-------------|-------------------------------------------|
-| pre-commit  | L1 + G1 (coverage, Biome, TypeScript)     |
-| pre-push    | L2 + G2                                   |
-| GitHub Actions | L1 + G1 + G2 (reusable quality workflow) |
+| pre-commit  | Working-tree L1 subchecks (coverage, Biome, TypeScript) |
+| pre-push    | Repeated unit suite plus staged secrets and lockfile scan; shipped CLI L2 remains planned |
+| GitHub Actions | L1 subchecks + G2 (reusable quality workflow) |
 
 ---
 
