@@ -27,7 +27,7 @@
   "license": "MIT",
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
-    "@types/node": "26.1.0",
+    "@types/node": "26.6.3",
     "@vitest/coverage-v8": "4.1.11",
     "husky": "^9.1.7",
     "typescript": "7.0.2",
