@@ -1,6 +1,6 @@
 {
   "name": "unseal",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "type": "module",
   "description": "Scan macOS /Applications for quarantined apps and batch-remove the quarantine attribute",
   "bin": {
@@ -34,7 +34,7 @@
     "vitest": "4.1.11"
   },
   "dependencies": {
-    "@inquirer/prompts": "8.7.3",
+    "@inquirer/prompts": "8.7.4",
     "chalk": "^5.4.0"
   },
   "overrides": {
