@@ -1,6 +1,6 @@
 {
   "name": "unseal",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "type": "module",
   "description": "Scan macOS /Applications for quarantined apps and batch-remove the quarantine attribute",
   "bin": {
@@ -38,7 +38,7 @@
     "chalk": "^5.4.0"
   },
   "overrides": {
-    "vite": "^8.0.16",
+    "vite": "8.1.6",
     "nanoid": "3.3.18",
     "postcss": "8.5.28",
     "source-map-js": "1.2.2"
