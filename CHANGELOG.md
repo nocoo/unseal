@@ -4,7 +4,7 @@
 
 ### Fixed
 
-- **`exec.exitCode` could be `NaN` on spawn failure** — `child_process.execFile` reports `ENOENT`/`EACCES`/etc as a *string* on `error.code`, and the previous `Number(code)` path produced `NaN`, violating the `ExecResult.exitCode: number` (finite integer) contract. Added `decodeExitCode()` that keeps numeric codes intact, parses numeric strings (`"3"` → 3), and collapses errno names + unknowns to 1. `stderr` also falls back to `error.message` when empty, not just when null — spawn failures produce empty-string stderr.
+- **`exec.exitCode` could be `NaN` on spawn failure** — `child_process.execFile` reports `ENOENT`/`EACCES`/etc as a _string_ on `error.code`, and the previous `Number(code)` path produced `NaN`, violating the `ExecResult.exitCode: number` (finite integer) contract. Added `decodeExitCode()` that keeps numeric codes intact, parses numeric strings (`"3"` → 3), and collapses errno names + unknowns to 1. `stderr` also falls back to `error.message` when empty, not just when null — spawn failures produce empty-string stderr.
 
 ### Changed
 

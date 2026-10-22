@@ -16,13 +16,13 @@ Scanning covers only `.app` entries directly inside `/Applications`. After the q
 
 ## Features
 
-| Task | Current behavior |
-| --- | --- |
-| Check status | Read extended attributes first; if quarantine is present, run `spctl --assess --type execute`. |
-| Separate candidates from unknown results | Apps with the attribute and a nonzero system assessment are candidates. Attribute-read failures appear as unknown and cannot be selected. |
-| Select apps | Show scan progress and an alphabetically sorted list; all candidates are selected by default. |
-| Check privileges after selection | Check sudo access once selection is complete, allowing sudo to request authentication when needed. |
-| Process a batch | Recursively remove the quarantine attribute from each selected app and its contents, continue after individual failures, and print results. |
+| Task                                     | Current behavior                                                                                                                            |
+| ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| Check status                             | Read extended attributes first; if quarantine is present, run `spctl --assess --type execute`.                                              |
+| Separate candidates from unknown results | Apps with the attribute and a nonzero system assessment are candidates. Attribute-read failures appear as unknown and cannot be selected.   |
+| Select apps                              | Show scan progress and an alphabetically sorted list; all candidates are selected by default.                                               |
+| Check privileges after selection         | Check sudo access once selection is complete, allowing sudo to request authentication when needed.                                          |
+| Process a batch                          | Recursively remove the quarantine attribute from each selected app and its contents, continue after individual failures, and print results. |
 
 The UI's `unsealed` status means either the attribute is absent or the system assessment succeeded. In the latter case, the attribute may still exist.
 
@@ -80,13 +80,13 @@ The first command runs all unit and composed-flow tests, with scanning, selectio
 
 ## Stack
 
-| Technology | Role |
-| --- | --- |
-| TypeScript / Node.js | CLI logic and published-package runtime |
-| Bun | Dependencies, development runtime, and ESM bundling |
-| Inquirer / chalk | Terminal selection and colors |
+| Technology           | Role                                                           |
+| -------------------- | -------------------------------------------------------------- |
+| TypeScript / Node.js | CLI logic and published-package runtime                        |
+| Bun                  | Dependencies, development runtime, and ESM bundling            |
+| Inquirer / chalk     | Terminal selection and colors                                  |
 | xattr / spctl / sudo | macOS attributes, system assessment, and privileged operations |
-| Vitest | Module, flow, and subprocess tests |
+| Vitest               | Module, flow, and subprocess tests                             |
 
 ## Documentation
 
