@@ -47,34 +47,33 @@ unseal/
 ### 1. `src/types.ts` — Shared Types
 
 ```ts
-type QuarantineStatus = "quarantined" | "unsealed" | "unknown"
+type QuarantineStatus = "quarantined" | "unsealed" | "unknown";
 
 export interface AppInfo {
-  name: string            // e.g. "Firefox.app"
-  path: string            // e.g. "/Applications/Firefox.app"
-  status: QuarantineStatus
-  error?: string          // populated when status is "unknown"
+  name: string; // e.g. "Firefox.app"
+  path: string; // e.g. "/Applications/Firefox.app"
+  status: QuarantineStatus;
+  error?: string; // populated when status is "unknown"
 }
 
 export interface UnsealResult {
-  app: AppInfo
-  success: boolean
-  error?: string
+  app: AppInfo;
+  success: boolean;
+  error?: string;
 }
 ```
 
 **Status semantics:**
 
-| Status         | Meaning                                                        | TUI behavior                |
-|---------------|----------------------------------------------------------------|-----------------------------|
-| `quarantined` | Has quarantine xattr AND Gatekeeper rejects (`spctl` exit ≠ 0) | Yellow, selectable          |
-| `unsealed`    | No quarantine xattr, OR Gatekeeper allows (`spctl` exit 0)     | Green ✓, info only          |
-| `unknown`     | xattr/spctl command failed (permission/timeout)                | Red ?, info only + warning  |
+| Status        | Meaning                                                        | TUI behavior               |
+| ------------- | -------------------------------------------------------------- | -------------------------- |
+| `quarantined` | Has quarantine xattr AND Gatekeeper rejects (`spctl` exit ≠ 0) | Yellow, selectable         |
+| `unsealed`    | No quarantine xattr, OR Gatekeeper allows (`spctl` exit 0)     | Green ✓, info only         |
+| `unknown`     | xattr/spctl command failed (permission/timeout)                | Red ?, info only + warning |
 
 ### 2. `src/scanner.ts` — App Discovery & Quarantine Detection
 
 **Exports:**
-
 - `listApps(exec: Executor, dir?: string, entries?: string[], onProgress?: (appName: string) => void, options?: { concurrency?: number; entries?: string[]; onProgress?: (appName: string) => void }): Promise<AppInfo[]>`
   - Default dir: `/Applications`
   - Lists all `*.app` bundles (top-level only, no recursion)
@@ -103,7 +102,6 @@ The `spctl` call is only made when the quarantine xattr is present, so non-quara
 ### 3. `src/unseal.ts` — Remove Quarantine Attribute
 
 **Exports:**
-
 - `unsealApps(apps: AppInfo[], exec: Executor): Promise<UnsealResult[]>`
   - For each app: `sudo xattr -rd com.apple.quarantine <path>`
   - Captures stdout/stderr, returns per-app success/failure
@@ -112,7 +110,6 @@ The `spctl` call is only made when the quarantine xattr is present, so non-quara
 ### 4. `src/sudo.ts` — Privilege Check
 
 **Exports:**
-
 - `checkSudo(exec: Executor): Promise<boolean>`
   - Runs `sudo -n true` to test if passwordless sudo is available
   - If fails, runs `sudo -v` to prompt password entry
@@ -122,18 +119,17 @@ The `spctl` call is only made when the quarantine xattr is present, so non-quara
 
 **Library choice: `@inquirer/prompts`**
 
-| Criteria       | @inquirer/prompts | enquirer  | prompts   |
-|---------------|-------------------|-----------|-----------|
-| ESM support   | Native            | CJS only  | CJS only  |
-| Maintenance   | Active            | Stale     | Stale     |
-| Checkbox      | Built-in          | Built-in  | Built-in  |
-| Bundle size   | Small (modular)   | Medium    | Small     |
-| TypeScript    | Native            | @types    | @types    |
+| Criteria    | @inquirer/prompts | enquirer | prompts  |
+| ----------- | ----------------- | -------- | -------- |
+| ESM support | Native            | CJS only | CJS only |
+| Maintenance | Active            | Stale    | Stale    |
+| Checkbox    | Built-in          | Built-in | Built-in |
+| Bundle size | Small (modular)   | Medium   | Small    |
+| TypeScript  | Native            | @types   | @types   |
 
 **Color: `chalk`**
 
 **Exports:**
-
 - `selectApps(quarantined: AppInfo[], unsealed: AppInfo[], unknown: AppInfo[]): Promise<AppInfo[]>`
   - Display three sections:
     1. **Upper section** (info only): Already unsealed apps — shown in green ✓, not selectable
@@ -147,11 +143,11 @@ Pressing Enter on the checkbox is itself the confirmation — there is no separa
 
 **CLI flags:**
 
-| Flag          | Behavior                                         |
-|--------------|--------------------------------------------------|
-| `--help`     | Print usage text, exit 0                         |
-| `--version`  | Print version from `package.json`, exit 0        |
-| (no flags)   | Run interactive scan + unseal flow               |
+| Flag        | Behavior                                  |
+| ----------- | ----------------------------------------- |
+| `--help`    | Print usage text, exit 0                  |
+| `--version` | Print version from `package.json`, exit 0 |
+| (no flags)  | Run interactive scan + unseal flow        |
 
 **Non-interactive detection:**
 
@@ -164,8 +160,12 @@ All system command execution goes through an injectable `Executor` function. Pro
 
 ```ts
 // src/exec.ts — command executor abstraction
-export interface ExecResult { stdout: string; stderr: string; exitCode: number }
-export type Executor = (cmd: string, args: string[]) => Promise<ExecResult>
+export interface ExecResult {
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+}
+export type Executor = (cmd: string, args: string[]) => Promise<ExecResult>;
 
 export function createExecutor(): Executor {
   // Wraps child_process.execFile; see src/exec.ts for the ENOENT / null-buffer
@@ -220,21 +220,21 @@ export interface RunOptions {
 
 ### Runtime
 
-| Package           | Purpose                      |
-|-------------------|------------------------------|
-| `@inquirer/prompts` | TUI checkbox + confirm     |
-| `chalk`           | Terminal colors              |
+| Package             | Purpose                |
+| ------------------- | ---------------------- |
+| `@inquirer/prompts` | TUI checkbox + confirm |
+| `chalk`             | Terminal colors        |
 
 ### Dev
 
-| Package                | Purpose                                  |
-|------------------------|------------------------------------------|
-| `@biomejs/biome`       | Linting, formatting, import organization |
-| `typescript`           | Type checking                            |
-| `@types/node`          | Node type definitions                    |
-| `vitest`               | Test runner                              |
-| `@vitest/coverage-v8`  | Coverage provider (V8)                   |
-| `husky`                | Git hooks (pre-commit / pre-push gates)  |
+| Package               | Purpose                                  |
+| --------------------- | ---------------------------------------- |
+| `@biomejs/biome`      | Linting, formatting, import organization |
+| `typescript`          | Type checking                            |
+| `@types/node`         | Node type definitions                    |
+| `vitest`              | Test runner                              |
+| `@vitest/coverage-v8` | Coverage provider (V8)                   |
+| `husky`               | Git hooks (pre-commit / pre-push gates)  |
 
 ### Runtime & Test
 
