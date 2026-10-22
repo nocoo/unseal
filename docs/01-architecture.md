@@ -247,7 +247,7 @@ export interface RunOptions {
 - **Dev runtime**: Bun
 - **Build**: `bun build src/index.ts --target=node --outdir=dist`
 - **Output**: Node-compatible ESM bundle in `dist/`
-- **Publish**: `npm publish` — requires Node `^20.19 || ^22.13 || >=24` (driven by `@inquirer/prompts@8` engines floor)
+- **Publish**: `npm publish` — requires Node `^22.13 || >=24` (driven by `@inquirer/prompts@8` engines floor)
 
 **package.json key fields:**
 
@@ -258,7 +258,7 @@ export interface RunOptions {
   "type": "module",
   "bin": { "unseal": "./dist/index.js" },
   "files": ["dist"],
-  "engines": { "node": "^20.19.0 || ^22.13.0 || >=24.0.0" }
+  "engines": { "node": "^22.13.0 || >=24.0.0" }
 }
 ```
 
