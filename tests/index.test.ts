@@ -188,7 +188,7 @@ describe("CLI entry point (real run())", () => {
     mockListApps.mockResolvedValueOnce([makeApp("A", "quarantined")]);
     mockSelectApps.mockRejectedValueOnce(new TypeError("something broke"));
 
-    expect(run({ isTTY: true })).rejects.toThrow("something broke");
+    await expect(run({ isTTY: true })).rejects.toThrow("something broke");
   });
 
   it("invokes the onProgress callback passed to listApps (writes scanning line)", async () => {
