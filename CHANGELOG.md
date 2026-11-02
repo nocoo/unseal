@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.3.5 — 2026-11-02
+
+First published release since 0.3.0; 0.3.1–0.3.4 only bumped the version.
+
+### Changed
+
+- **`chalk` 5.6.2 → 6.0.1** — major bump, no API surface used here changed; chalk 6 requires Node.js ≥22, which the `engines` range already enforces.
+- **`vitest` / `@vitest/coverage-v8` 4.1.11 → 5.0.5** — major bump, requires Node.js ≥22 and Vite ≥6.4. Dropped the stale `overrides` block (`@vitest/mocker`, `vite`, `nanoid`, `postcss`, `source-map-js`): it pinned vitest-4-era versions and left `@vitest/mocker` at 4.x while vitest 5 depends on 5.0.5. Resolution without the pins stays advisory-free per `osv-scanner --lockfile=bun.lock`.
+- **`@biomejs/biome` 2.6.2 → 2.6.4**, **`@types/node` 26.6.5 → 26.6.6** — patch bumps; `biome.json` schema URL synced to 2.6.4.
+- **`@inquirer/prompts` 8.7.4 → 8.7.5** and Node 20 dropped from `engines` (CI repinned to `base-ci` 2026-10-22) — carried over from the unpublished 0.3.1–0.3.4 bumps.
+
+### Fixed
+
+- **Un-awaited rejection assertion in `tests/index.test.ts`** — vitest 5 rejects async assertions that are not awaited; the prompt-error test now awaits `expect(...).rejects`.
+
 ## 0.3.0 — 2026-07-13
 
 ### Fixed
