@@ -1,6 +1,94 @@
-# L1: Unit Tests
-bun run test:coverage
+# === Quality Gate: pre-commit ===
+# L1 + G1 (6DQ): checks the Git index snapshot, not the working tree.
+set -e
+command -v git >/dev/null 2>&1 || {
+	echo "pre-commit: git is required" >&2
+	exit 1
+}
+command -v bun >/dev/null 2>&1 || {
+	echo "pre-commit: bun is required" >&2
+	exit 1
+}
 
-# G1: Static Analysis
-bun run typecheck
-bun run lint
+snapshot=
+cleanup() {
+	status=$?
+	trap - EXIT INT TERM HUP
+	if [ -n "$snapshot" ]; then
+		rm -rf "$snapshot" || :
+		snapshot=
+	fi
+	exit "$status"
+}
+trap cleanup EXIT
+trap "exit 130" INT
+trap "exit 143" TERM
+trap "exit 129" HUP
+
+snapshot=$(mktemp -d "${TMPDIR:-/tmp}/unseal-index-XXXXXX")
+git checkout-index --all --prefix="$snapshot/"
+repo=$(git rev-parse --show-toplevel)
+
+if [ ! -d "$repo/node_modules" ]; then
+	echo "pre-commit: node_modules is required — run: bun install --frozen-lockfile" >&2
+	exit 1
+fi
+if [ ! -f "$snapshot/package.json" ] || [ ! -f "$snapshot/bun.lock" ]; then
+	echo "pre-commit: staged package.json and bun.lock are required" >&2
+	exit 1
+fi
+if ! cmp -s "$snapshot/package.json" "$repo/package.json" || ! cmp -s "$snapshot/bun.lock" "$repo/bun.lock"; then
+	echo "pre-commit: staged package.json/bun.lock must match the installed worktree copies" >&2
+	exit 1
+fi
+
+mkdir "$snapshot/node_modules"
+for entry in "$repo/node_modules"/*; do
+	[ -e "$entry" ] || continue
+	ln -s "$entry" "$snapshot/node_modules/${entry##*/}"
+done
+ln -s "$repo/node_modules/.bin" "$snapshot/node_modules/.bin"
+mkdir -p "$snapshot/node_modules/.vite" "$snapshot/node_modules/.vitest" "$snapshot/.cache"
+unset GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_PREFIX
+unset GIT_OBJECT_DIRECTORY GIT_ALTERNATE_OBJECT_DIRECTORIES
+export XDG_CACHE_HOME="$snapshot/.cache"
+export XDG_STATE_HOME="$snapshot/.cache"
+PATH="$snapshot/node_modules/.bin:$PATH"
+cd "$snapshot"
+
+if ! grep -Fq -- '--coverage' package.json; then
+	echo "pre-commit: test:coverage must run vitest with --coverage" >&2
+	exit 1
+fi
+for tool in tsc vitest biome; do
+	if [ ! -x "node_modules/.bin/$tool" ]; then
+		echo "pre-commit: $tool must resolve from node_modules — run: bun install --frozen-lockfile" >&2
+		exit 1
+	fi
+done
+
+run_l1() {
+	bun run typecheck
+	bun run lint
+	bun run test:coverage
+	if [ ! -d coverage ]; then
+		echo "pre-commit: coverage output directory missing" >&2
+		exit 1
+	fi
+}
+
+if [ -n "${UNSEAL_L1_TIMEOUT_SEC:-}" ]; then
+	if command -v timeout >/dev/null 2>&1; then
+		timeout --preserve-status --signal=TERM "$UNSEAL_L1_TIMEOUT_SEC" sh -ec '
+			bun run typecheck
+			bun run lint
+			bun run test:coverage
+			test -d coverage
+		'
+	else
+		echo "pre-commit: UNSEAL_L1_TIMEOUT_SEC requires coreutils timeout" >&2
+		exit 1
+	fi
+else
+	run_l1
+fi
