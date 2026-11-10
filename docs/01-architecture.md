@@ -74,6 +74,7 @@ export interface UnsealResult {
 ### 2. `src/scanner.ts` — App Discovery & Quarantine Detection
 
 **Exports:**
+
 - `listApps(exec: Executor, dir?: string, entries?: string[], onProgress?: (appName: string) => void, options?: { concurrency?: number; entries?: string[]; onProgress?: (appName: string) => void }): Promise<AppInfo[]>`
   - Default dir: `/Applications`
   - Lists all `*.app` bundles (top-level only, no recursion)
@@ -102,6 +103,7 @@ The `spctl` call is only made when the quarantine xattr is present, so non-quara
 ### 3. `src/unseal.ts` — Remove Quarantine Attribute
 
 **Exports:**
+
 - `unsealApps(apps: AppInfo[], exec: Executor): Promise<UnsealResult[]>`
   - For each app: `sudo xattr -rd com.apple.quarantine <path>`
   - Captures stdout/stderr, returns per-app success/failure
@@ -110,6 +112,7 @@ The `spctl` call is only made when the quarantine xattr is present, so non-quara
 ### 4. `src/sudo.ts` — Privilege Check
 
 **Exports:**
+
 - `checkSudo(exec: Executor): Promise<boolean>`
   - Runs `sudo -n true` to test if passwordless sudo is available
   - If fails, runs `sudo -v` to prompt password entry
@@ -130,6 +133,7 @@ The `spctl` call is only made when the quarantine xattr is present, so non-quara
 **Color: `chalk`**
 
 **Exports:**
+
 - `selectApps(quarantined: AppInfo[], unsealed: AppInfo[], unknown: AppInfo[]): Promise<AppInfo[]>`
   - Display three sections:
     1. **Upper section** (info only): Already unsealed apps — shown in green ✓, not selectable
