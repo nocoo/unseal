@@ -1,6 +1,6 @@
-# L2: Integration Tests
+# L1 unit tests
 bun run test
 
-# G2: Security
+# G1 + G2: Security
 gitleaks protect --staged
 osv-scanner --lockfile=bun.lock

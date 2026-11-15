@@ -60,28 +60,29 @@ bun run debug               # interactive scenario harness (manual)
 
 ## Verification
 
-Status: `enforced` | `planned` | `manual` | `N/A`.
-6DQ retains its name with unified L1, L2/L3, G2 and D1; former G1 merged into L1 on 2026-09-21. Follow the maintained `system0-6dq-l1` contract. Preserve the 98% bar; do not lower it to 95%. CLI process E2E is not N/A just because there is no browser.
-L1 requires statements/branches/functions/lines each ≥98%; no skipped or focused tests.
+Quality follows `system1-quality` (v1.3.0) with 12 canonical slots (`impl`, `todo`, `na`) and `nocoo/base-ci` v2026.15 (`777bbe4f9bacab8a91d8c01974480a6ee23d28e0`) in native mode (`quality-slots.yml`). Preserve the 98% coverage bar; do not lower it to 95%.
 
-| Change         | Proof                                                                                                                                 | Status   | Evidence                                                                                                                                     |
-| -------------- | ------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
-| Logic          | L1 Vitest statements/branches/functions/lines each ≥ **98%**                                                                          | enforced | `vitest.config.ts`; pre-commit `test:coverage`; CI `bun run test:coverage`                                                                   |
-| API / schema   | L2 packed CLI subprocess (`--help`/`--version`/TTY)                                                                                   | planned  | [docs/02-testing.md](docs/02-testing.md) subprocess smoke **not implemented**; pre-push `bun run test` repeats L1                            |
-| UI path        | L3 process-level E2E of `dist/index.js`                                                                                               | planned  | no browser; shipped-binary E2E still required                                                                                                |
-| Complete L1    | 98% coverage plus strict check-only types/lint, zero errors/warnings, no skipped/focused tests and installed index-snapshot rejection | planned  | Pre-commit gates checkout-index snapshot (typecheck, lint, `test:coverage`); skip/focus rejection and measured <30s budget remain unverified |
-| Deps / secrets | G2 osv-scanner + gitleaks; missing binary fails                                                                                       | enforced | pre-push `gitleaks protect --staged` + `osv-scanner --lockfile=bun.lock`; CI quality.yml default security                                    |
-| Test isolation | D1 never touch real `/Applications`                                                                                                   | enforced | unit tests inject Executor mocks; no durable DB (`N/A` for SQLite). Do not run `unseal` unmocked in CI                                       |
-| Bundler output | `bun run build`                                                                                                                       | planned  | not in hooks                                                                                                                                 |
-| Docs           | docs/01–02 if CLI changed                                                                                                             | manual   | human review                                                                                                                                 |
-| Release        | npm `unseal`                                                                                                                          | planned  | CHANGELOG; no publish workflow in-repo                                                                                                       |
+| Slot             | Proof                                                                               | Status            | Evidence                                                                                                          |
+| ---------------- | ----------------------------------------------------------------------------------- | ----------------- | ----------------------------------------------------------------------------------------------------------------- |
+| S1: Types        | Strict TypeScript (`bun run typecheck`)                                             | enforced (`impl`) | Pre-commit index snapshot & CI `s1-types`                                                                         |
+| S2: Lint         | Biome check-only (`bun run lint`), zero errors/warnings                             | enforced (`impl`) | Pre-commit index snapshot & CI `s2-lint`                                                                          |
+| S3: Workflow     | `actionlint` + 40-char SHA pinning                                                  | enforced (`impl`) | CI `s3-workflow`                                                                                                  |
+| G1: Secrets      | Gitleaks scan                                                                       | enforced (`impl`) | Pre-push `gitleaks protect --staged` & CI `g1-secrets`                                                            |
+| G2: Dependencies | `osv-scanner` (`osv-scanner.toml`, `bun.lock`)                                      | enforced (`impl`) | Pre-push & CI `g2-dependencies`                                                                                   |
+| B1: Build        | `bun run build`                                                                     | enforced (`impl`) | CI `b1-build`                                                                                                     |
+| L1: Unit         | Vitest statements/branches/functions/lines each ≥ **98%**, no skipped/focused tests | enforced (`impl`) | `vitest.config.ts`; pre-commit `test:coverage` & CI `l1-unit`                                                     |
+| L2: Runtime      | Cloudflare Worker / workerd runtime                                                 | N/A (`na`)        | Not a Cloudflare Worker project                                                                                   |
+| L3: Integration  | Packed CLI subprocess (`--help`/`--version`/TTY)                                    | planned (`todo`)  | [docs/02-testing.md](docs/02-testing.md) subprocess smoke **not implemented**; pre-push `bun run test` repeats L1 |
+| L4: E2E          | Browser UI E2E                                                                      | N/A (`na`)        | macOS CLI without browser UI                                                                                      |
+| P1: Package      | `ci:package` / `publint` / `attw`                                                   | planned (`todo`)  | `unseal` npm package gate not yet wired                                                                           |
+| Z1: Gate         | Aggregate all `impl` slots & SHA consistency                                        | enforced (`impl`) | CI `z1-gate` (`quality / Z1: Gate`)                                                                               |
 
-| Hook       | Verifies                                                                                           | Budget                    | Runs                             |
-| ---------- | -------------------------------------------------------------------------------------------------- | ------------------------- | -------------------------------- |
-| pre-commit | index-snapshot `git checkout-index` then typecheck, lint, `test:coverage` (symlink `node_modules`) | target <30s (unmeasured)  | Unified L1 subchecks             |
-| pre-push   | working-tree `bun run test`; `gitleaks protect --staged`; osv on `bun.lock` (not stdin refs)       | target <3min (unmeasured) | G2; L2 label is inaccurate today |
+| Hook       | Verifies                                                                                           | Budget                    | Runs                 |
+| ---------- | -------------------------------------------------------------------------------------------------- | ------------------------- | -------------------- |
+| pre-commit | index-snapshot `git checkout-index` then typecheck, lint, `test:coverage` (symlink `node_modules`) | target <30s (unmeasured)  | S1, S2, L1 subchecks |
+| pre-push   | working-tree `bun run test`; `gitleaks protect --staged`; osv on `bun.lock` (not stdin refs)       | target <3min (unmeasured) | L1, G1, G2           |
 
-Pre-commit enforces index-snapshot unified L1; target stdin-ref L2+G2 on pre-push. Check-only; `--no-verify` forbidden.
+Pre-commit enforces index-snapshot L1; target stdin-ref G2 on pre-push. Check-only; `--no-verify` forbidden. CI runs `.github/workflows/ci.yml` -> `./.github/workflows/quality-slots.yml`, gated on `quality / Z1: Gate`.
 
 ## Resources / Isolation
 
