@@ -1,4 +1,4 @@
-# System1 quality slots, native mode (system1-quality v1.3.0, base-ci v2026.16).
+# System1 quality slots, native mode (system1-quality v1.3.0, base-ci v2026.17).
 # L2 Runtime (`na`), L3 Integration (`todo`), L4 E2E (`na`), and P1 Package (`todo`) stay skipped.
 name: Quality slots
 
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -68,37 +68,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - name: Install verified actionlint
-        run: |
-          set -euo pipefail
-          curl --fail --silent --show-error --location --retry 3 \
-            https://github.com/rhysd/actionlint/releases/download/v1.7.12/actionlint_1.7.12_linux_amd64.tar.gz \
-            -o "$RUNNER_TEMP/actionlint.tar.gz"
-          echo "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8  $RUNNER_TEMP/actionlint.tar.gz" | sha256sum --check
-          tar -xzf "$RUNNER_TEMP/actionlint.tar.gz" -C "$RUNNER_TEMP" actionlint
-          echo "$RUNNER_TEMP" >> "$GITHUB_PATH"
-      - name: Run actionlint and verify immutable SHA pins
-        run: |
-          set -euo pipefail
-          actionlint
-          node --input-type=module - <<'EOF'
-          import fs from "node:fs";
-          import path from "node:path";
-          const dir = ".github/workflows";
-          for (const file of fs.readdirSync(dir).filter(f => f.endsWith(".yml") || f.endsWith(".yaml"))) {
-            const content = fs.readFileSync(path.join(dir, file), "utf8");
-            for (const match of content.matchAll(/^\s*-?\s*uses:\s*([^\s#]+)/gm)) {
-              const ref = match[1];
-              if (ref.startsWith("./") || ref.startsWith("docker://")) continue;
-              const sha = ref.split("@")[1] ?? "";
-              if (!/^[0-9a-f]{40}$/.test(sha)) {
-                console.error(`Unpinned action reference in ${file}: ${ref}`);
-                process.exit(1);
-              }
-            }
-          }
-          console.log("All external action references are pinned to 40-char SHAs.");
-          EOF
+      - uses: nocoo/base-ci/.github/actions/lint-workflows@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
       - name: Record tested SHA
         id: record-sha
         if: always()
@@ -114,9 +84,8 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-security-scanners@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
-      - name: Scan checkout for secrets
-        run: gitleaks dir . --no-banner --redact --log-level error
+          fetch-depth: 1
+      - uses: nocoo/base-ci/.github/actions/scan-secrets@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
       - name: Record tested SHA
         id: record-sha
         if: always()
@@ -132,9 +101,9 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-security-scanners@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
-      - name: Scan lockfile for dependency vulnerabilities
-        run: osv-scanner scan --config osv-scanner.toml --lockfile=bun.lock
+      - uses: nocoo/base-ci/.github/actions/scan-dependencies@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
+        with:
+          lockfiles: "bun.lock"
       - name: Record tested SHA
         id: record-sha
         if: always()
@@ -150,7 +119,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -172,7 +141,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@6424d395d36a815d931f10e557762eb635d511c0 # v2026.16
+      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}

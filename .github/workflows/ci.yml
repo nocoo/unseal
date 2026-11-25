@@ -1,4 +1,4 @@
-# System1 quality slots, native mode (system1-quality v1.3.0, base-ci v2026.16).
+# System1 quality slots, native mode (system1-quality v1.3.0, base-ci v2026.17).
 name: CI
 
 on:
