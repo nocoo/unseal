@@ -1,4 +1,4 @@
-# System1 quality slots, native mode (system1-quality v1.3.0, base-ci v2026.17).
+# System1 quality slots, native mode (system1-quality v1.3.0, base-ci v2026.18).
 # L2 Runtime (`na`), L3 Integration (`todo`), L4 E2E (`na`), and P1 Package (`todo`) stay skipped.
 name: Quality slots
 
@@ -24,7 +24,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
+      - uses: nocoo/base-ci/.github/actions/setup-js@bfaac83b5a4d5c7ed26320bb5b09f3ca0a01932c # v2026.18
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
+      - uses: nocoo/base-ci/.github/actions/setup-js@bfaac83b5a4d5c7ed26320bb5b09f3ca0a01932c # v2026.18
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -68,7 +68,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/lint-workflows@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
+      - uses: nocoo/base-ci/.github/actions/lint-workflows@bfaac83b5a4d5c7ed26320bb5b09f3ca0a01932c # v2026.18
       - name: Record tested SHA
         id: record-sha
         if: always()
@@ -85,7 +85,7 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 1
-      - uses: nocoo/base-ci/.github/actions/scan-secrets@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
+      - uses: nocoo/base-ci/.github/actions/scan-secrets@bfaac83b5a4d5c7ed26320bb5b09f3ca0a01932c # v2026.18
       - name: Record tested SHA
         id: record-sha
         if: always()
@@ -101,7 +101,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/scan-dependencies@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
+      - uses: nocoo/base-ci/.github/actions/scan-dependencies@bfaac83b5a4d5c7ed26320bb5b09f3ca0a01932c # v2026.18
         with:
           lockfiles: "bun.lock"
       - name: Record tested SHA
@@ -119,7 +119,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
+      - uses: nocoo/base-ci/.github/actions/setup-js@bfaac83b5a4d5c7ed26320bb5b09f3ca0a01932c # v2026.18
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -141,7 +141,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: nocoo/base-ci/.github/actions/setup-js@dc858360aa7812db61fd9d825943e4efd4dcd0e7 # v2026.17
+      - uses: nocoo/base-ci/.github/actions/setup-js@bfaac83b5a4d5c7ed26320bb5b09f3ca0a01932c # v2026.18
         with:
           package-manager: bun
           runtime-version: ${{ env.BUN_VERSION }}
@@ -199,41 +199,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     outputs:
-      tested-sha: ${{ steps.gate.outputs.sha }}
+      tested-sha: ${{ steps.gate.outputs.tested-sha }}
     steps:
-      - name: Validate all quality slots and tested SHAs
-        id: gate
-        env:
-          NEEDS_JSON: ${{ toJSON(needs) }}
-          EXPECTED_SHA: ${{ github.sha }}
-        run: |
-          node --input-type=module - <<'EOF'
-          const needs = JSON.parse(process.env.NEEDS_JSON);
-          const expectedSha = process.env.EXPECTED_SHA;
-          const implSlots = ["s1-types", "s2-lint", "s3-workflow", "g1-secrets", "g2-dependencies", "b1-build", "l1-unit"];
-          const skippedSlots = ["l2-runtime", "l3-integration", "l4-e2e", "p1-package"];
-          const errors = [];
-
-          for (const slot of implSlots) {
-            const entry = needs[slot];
-            if (!entry || entry.result !== "success") {
-              errors.push(`impl slot ${slot} result is ${entry?.result ?? "missing"}`);
-            } else if (entry.outputs?.["tested-sha"] !== expectedSha) {
-              errors.push(`impl slot ${slot} tested-sha (${entry.outputs?.["tested-sha"]}) != ${expectedSha}`);
-            }
-          }
-
-          for (const slot of skippedSlots) {
-            const entry = needs[slot];
-            if (!entry || entry.result !== "skipped") {
-              errors.push(`non-impl slot ${slot} expected skipped, got ${entry?.result ?? "missing"}`);
-            }
-          }
-
-          if (errors.length > 0) {
-            console.error("Z1 Gate failed:\n" + errors.map(e => "  - " + e).join("\n"));
-            process.exit(1);
-          }
-          console.log(`Z1 Gate passed: ${implSlots.length} impl slots succeeded on ${expectedSha}, ${skippedSlots.length} non-impl slots skipped.`);
-          EOF
-          echo "sha=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+      - id: gate
+        uses: nocoo/base-ci/.github/actions/z1-gate@bfaac83b5a4d5c7ed26320bb5b09f3ca0a01932c # v2026.18
+        with:
+          needs-json: ${{ toJSON(needs) }}
+          expected-sha: ${{ github.sha }}
+          required-jobs: |
+            s1-types=S1: Types
+            s2-lint=S2: Lint
+            s3-workflow=S3: Workflow
+            g1-secrets=G1: Secrets
+            g2-dependencies=G2: Dependencies
+            b1-build=B1: Build
+            l1-unit=L1: Unit
+          skipped-jobs: |
+            l2-runtime=L2: Runtime
+            l3-integration=L3: Integration
+            l4-e2e=L4: E2E
+            p1-package=P1: Package
