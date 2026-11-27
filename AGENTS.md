@@ -30,7 +30,7 @@ bun run debug           # manual interactive scenario harness (mocked exec/scan)
 
 ## Quality & Local Gates
 
-Follows `system1-quality`; CI slot definitions and pinned `base-ci` revision live in `.github/workflows/quality-slots.yml` (called by `.github/workflows/ci.yml`; `quality / Z1: Gate` required on `main`). Status vocabulary: `enforced`, `planned`, `manual`, `N/A`. This file is the contract—raise hooks/CI to match rather than weakening rules.
+Follows `system1-quality`; CI slot definitions and pinned `base-ci` (`v2026.24`) revision live in `.github/workflows/quality-slots.yml` (called by `.github/workflows/pipeline.yml`; `quality / Z1: Gate` required on `main`), with no automated CD workflow (manual local `npm publish` only). Status vocabulary: `enforced`, `planned`, `manual`, `N/A`. This file is the contract—raise hooks/CI to match rather than weakening rules.
 
 - **Coverage boundary**: `L1 Unit` enforces `>= 98%` (statements/branches/functions/lines) on `src/**/*.ts` excluding `src/types.ts` and `src/debug.ts`, with no skipped or focused tests.
 - **Exceptions / gaps**: `L2 Runtime` is `N/A` (not a Worker/platform-bound runtime); `L4 E2E` is `N/A` (macOS CLI without browser UI).

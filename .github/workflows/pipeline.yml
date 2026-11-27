@@ -1,11 +1,9 @@
-# System1 quality slots, native mode (system1-quality v1.3.0, base-ci v2026.20).
-name: CI
+name: Pipeline
 
 on:
   push:
     branches: [main]
   pull_request:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
