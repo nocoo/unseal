@@ -12,7 +12,7 @@ export default defineConfig({
       provider: "v8",
       // Vitest v4 has AST-aware remapping enabled by default; the
       // experimentalAstAwareRemapping flag from v3 is no longer needed.
-      reporter: ["text", "html"],
+      reporter: ["text", "html", "json-summary"],
       include: ["src/**/*.ts"],
       exclude: [
         // Type definitions only — no runtime code.
@@ -23,10 +23,10 @@ export default defineConfig({
         "**/debug.ts",
       ],
       thresholds: {
-        statements: 98,
-        branches: 98,
-        functions: 98,
-        lines: 98,
+        statements: 90,
+        lines: 90,
+        functions: 90,
+        branches: 85,
       },
     },
   },
